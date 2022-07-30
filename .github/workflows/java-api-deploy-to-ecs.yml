@@ -1,0 +1,89 @@
+name: Deploy Spring Boot microservice to ECS Fargate
+
+on:
+  workflow_call:
+    inputs:
+      env:
+        required: true
+        type: string
+        default: 'dev'
+      working-directory:
+        required: false
+        type: string
+        default: '.'
+
+jobs:
+
+  deploy:
+    name: Deploy to AWS ECS Fargate
+    runs-on: ubuntu-latest
+
+    # accommodating monorepo, this sets the working directory at the job level, for multi repo, defaults to "."
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+
+    # important to specify the environment here so workflow knows where to deploy your artifact to.
+    # default environment to "dev" if it is not passed in through workflow_dispatch manual trigger
+    environment: ${{ inputs.env || 'dev' }}
+
+    # only execute if PR is merged or manual trigger
+    if: github.event.pull_request.merged || inputs.env != null
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@248ae51c2e8cc9622ecf50685c8bf7150c6e8813
+        with:
+          egress-policy: audit # TODO: change to 'egress-policy: block' after couple of runs
+
+      - name: Checkout Code
+        uses: actions/checkout@d0651293c4a5a52e711f25b41b05b2212f385d28
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@05b148adc31e091bafbaf404f745055d4d3bc9d2
+        with:
+          role-to-assume: ${{ secrets.ROLE_TO_ASSUME }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Set project version as environment variable
+        run: echo "PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
+
+      - name: Print debug info
+        run: |
+          echo environment is ${{ inputs.env }}
+          echo working_directory is ${{ inputs.working-directory }}
+          echo project version is ${{ env.PROJECT_VERSION }}
+          echo github.event.pull_request.merged is ${{ github.event.pull_request.merged }}
+
+      - name: Download task definition
+        run: |
+          aws ecs describe-task-definition --task-definition ${{ secrets.ECS_TASK_DEFINITION }} --query taskDefinition | jq -r 'del(
+                  .taskDefinitionArn,
+                  .requiresAttributes,
+                  .compatibilities,
+                  .revision,
+                  .status,
+                  .registeredAt,
+                  .registeredBy
+                )' > task-definition.json
+
+      - name: Fill in the new image ID and pass in the environment variable in the ECS task definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@374ee96751fffe528c09b5f427848da60469bb55
+        with:
+          # important to specify working directory here to accommodate monorepo
+          task-definition: ${{ inputs.working-directory }}/task-definition.json
+          container-name: ${{ secrets.CONTAINER_NAME }}
+          image: ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY_NAME }}:${{ env.PROJECT_VERSION }}
+          # this ENVIRONMENT is passed into the active spring profile in start-service.sh in the startup command,
+          # so it knows which application yml to retrieve based on the active spring profile
+          environment-variables: |
+            ENVIRONMENT=${{ inputs.env || 'dev' }}
+
+      - name: Deploy Amazon ECS task definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@9c18d81893224634ac107b91720119c91c1d600e
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: ${{ secrets.ECS_SERVICE }}
+          cluster: ${{ secrets.ECS_CLUSTER }}
+          wait-for-service-stability: true

@@ -1,0 +1,97 @@
+name: Build and Test workflow for Spring Boot microservices
+
+on:
+  workflow_call:
+    inputs:
+      env:
+        required: true
+        type: string
+        default: 'dev'
+      working-directory:
+        required: false
+        type: string
+        default: '.'
+      java-version:
+        required: false
+        type: string
+        default: '17'
+      maven-params:
+        required: false
+        type: string
+        default: ''
+
+jobs:
+
+  build:
+    name: Build and Test
+    runs-on: ubuntu-latest
+
+    # accommodating monorepo, this sets the working directory at the job level, for multi repo, defaults to "."
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+
+    environment: ${{ inputs.env || 'dev' }}
+
+    # only run this job for auto trigger by PR merge, if manual trigger for other environments than dev,
+    # no need to run this job as the image will be pulled and promoted to envs higher than dev
+    # also dependabot PRs do not need to run this flow as GitHub prohibits dependabot PRs to access workflows
+    # dealing with secrets due to security reason.
+    if: (inputs.env == null || inputs.env == 'dev') && github.actor != 'dependabot[bot]'
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@248ae51c2e8cc9622ecf50685c8bf7150c6e8813
+        with:
+          egress-policy: audit # TODO: change to 'egress-policy: block' after couple of runs
+
+      - name: Checkout Code
+        uses: actions/checkout@d0651293c4a5a52e711f25b41b05b2212f385d28
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@05b148adc31e091bafbaf404f745055d4d3bc9d2
+        with:
+          role-to-assume: ${{ secrets.ROLE_TO_ASSUME }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Setup jdk
+        uses: actions/setup-java@2506d21b7426d2b544f65d027f277ead4c5f6a9f
+        with:
+          java-version: ${{ inputs.java-version }}
+          distribution: 'adopt'
+          cache: maven
+
+      - name: Build with Maven
+        run: mvn clean install ${{ inputs.maven-params }} --file pom.xml
+
+      - name: Set project version as environment variable
+        run: echo "PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
+
+      - name: Print debug info
+        run: |
+          echo environment is ${{ inputs.env }}
+          echo working_directory is ${{ inputs.working-directory }}
+          echo project version is ${{ env.PROJECT_VERSION }}
+          echo java-version is ${{ inputs.java-version }}
+
+      - name: Build, tag, and push image to AWS ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
+          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
+          IMAGE_TAG: ${{ env.PROJECT_VERSION }}
+        run: |
+          # Build a docker container and push it to ECR so that it can be deployed to ECS.
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker login -u AWS -p $(aws ecr get-login-password --region eu-west-1) $ECR_REGISTRY
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+
+      - name: Scan ECR image with Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@c666240787bede835456c7ceb9f75c9225c3c1b4
+        with:
+          image-ref: ${{ steps.build-image.outputs.image }}
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
