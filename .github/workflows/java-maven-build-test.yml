@@ -3,18 +3,22 @@ name: Build and Test workflow for Spring Boot microservices
 on:
   workflow_call:
     inputs:
+      # pass in environment through manual trigger, if not passed in, default to 'dev'
       env:
         required: true
         type: string
         default: 'dev'
+      # working-directory is added to accommodate monorepo.  For multi repo, defaults to '.', current directory
       working-directory:
         required: false
         type: string
         default: '.'
+      # pass in java version to allow different app requiring different java versions to reuse the same workflow, default to java 17
       java-version:
         required: false
         type: string
         default: '17'
+      # allowing calling workflows to pass in maven parameter(s) such as '-Dmaven.test.skip' for certain apps, default to blank, not to skip test
       maven-params:
         required: false
         type: string
@@ -31,6 +35,7 @@ jobs:
       run:
         working-directory: ${{ inputs.working-directory }}
 
+    # important to specify environment here, defaults to 'dev', so github ations knows where to retrieve the secrets
     environment: ${{ inputs.env || 'dev' }}
 
     # only run this job for auto trigger by PR merge, if manual trigger for other environments than dev,
