@@ -3,10 +3,12 @@ name: Deploy Spring Boot microservice to ECS Fargate
 on:
   workflow_call:
     inputs:
+      # pass in environment through manual trigger, if not passed in, default to 'dev'
       env:
         required: true
         type: string
         default: 'dev'
+      # working-directory is added to accommodate monorepo.  For multi repo, defaults to '.', current directory
       working-directory:
         required: false
         type: string
