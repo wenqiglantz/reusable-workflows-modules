@@ -1,0 +1,87 @@
+name: "Terraform Deployment"
+
+on:
+  workflow_call:
+    inputs:
+      # working-directory is added to specify "terraform" directory in project source code as that's where the terraform files live.
+      working-directory:
+        required: false
+        type: string
+        default: './terraform'
+      # apply-branch refers to the branch where 'terraform apply' should execute.  It defaults to the "main" branch, but calling workflow has the option to change it to a different branch to execute 'terraform apply'.
+      apply-branch:
+        required: false
+        type: string
+        default: 'main'
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  terraform:
+    name:   Deploy terraform
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+
+    # important to specify the environment here so workflow knows where to deploy your artifact to.
+    # default environment to "dev" if it is not passed in through workflow_dispatch manual trigger
+    environment: ${{ github.event.inputs.environment || 'dev' }}
+
+    env:
+      DEPLOY_REPO: ${{ github.event.repository.name }}
+      DEPLOY_ENV: ${{ github.event.inputs.environment || 'dev' }}
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@74b568e8591fbb3115c70f3436a0c6b0909a8504
+        with:
+          egress-policy: audit # TODO: change to 'egress-policy: block' after couple of runs
+
+      - name: Checkout Code
+        uses: actions/checkout@d0651293c4a5a52e711f25b41b05b2212f385d28
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@05b148adc31e091bafbaf404f745055d4d3bc9d2
+        with:
+          role-to-assume: ${{ secrets.TERRAFORM_ROLE_TO_ASSUME }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@7b3bcd8d76f3cbaec0a3564e53de7c9adf00f0a7
+
+      - name: Terraform Init
+        id: init
+        run: |
+          rm -rf .terraform
+          terraform init -backend-config='./.env/${{ github.event.inputs.environment || 'dev' }}/backend.tfvars' -upgrade=true -no-color -input=false
+
+      - name: Terraform Plan
+        id: plan
+        run: |
+          # convert repo and env to lower case and pass to Terraform as env variables
+          export TF_VAR_deploy_repo=${DEPLOY_REPO,,}
+          export TF_VAR_deploy_env=${DEPLOY_ENV,,}
+          terraform plan -input=false -var-file=.env/${{ github.event.inputs.environment || 'dev' }}/terraform.tfvars -no-color
+
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/${{ inputs.apply-branch }}' && github.event_name == 'push'
+        id: apply
+        run: |
+          # convert repo and env to lower case and pass to Terraform as env variables
+          export TF_VAR_deploy_repo=${DEPLOY_REPO,,}
+          export TF_VAR_deploy_env=${DEPLOY_ENV,,}
+          terraform apply -auto-approve -input=false -var-file=.env/${{ github.event.inputs.environment || 'dev' }}/terraform.tfvars
+
+      - name: Terraform destroy
+        # If you want to use this workflow to run terraform destroy, create a feature branch "destroy", trigger this workflow from that branch to destroy.
+        if: github.ref == 'refs/heads/destroy'
+        id: destroy
+        run: |
+          # convert repo and env to lower case and pass to Terraform as env variables
+          export TF_VAR_deploy_repo=${DEPLOY_REPO,,}
+          export TF_VAR_deploy_env=${DEPLOY_ENV,,}
+          terraform destroy -auto-approve -input=false -var-file=.env/${{ github.event.inputs.environment || 'dev' }}/terraform.tfvars

@@ -1,0 +1,127 @@
+name: Workflow to send email
+
+on:
+  workflow_call:
+    inputs:
+      # Required mail server address if not connection_url
+      server-address:
+        required: false
+        type: string
+        default: 'smtp.gmail.com'
+      # Server port
+      server-port:
+        required: false
+        type: number
+        default: 465
+      # Optional whether this connection use TLS
+      secure-flag:
+        required: false
+        type: boolean
+        default: false
+      # Required mail subject
+      subject:
+        required: false
+        type: string
+        default: 'GitHub Actions job result'
+      # Required sender full name (address can be skipped)
+      from:
+        required: false
+        type: string
+        default: '"GitHub Actions" <gitaction-notification@gmail.com>'
+      # Required recipients' addresses, if multiple, separate by comma
+      to:
+        required: true
+        type: string
+        default: ''
+      # Optional carbon copy recipients, if multiple, separate by comma
+      cc:
+        required: false
+        type: string
+        default: ''
+      # Optional blind carbon copy recipients, if multiple, separate by comma
+      bcc:
+        required: false
+        type: string
+        default: ''
+      # Optional plain body
+      body:
+        required: false
+        type: string
+        default: ''
+      # Optional HTML body read from file
+      html-body:
+        required: false
+        type: string
+        default: ''
+      # Optional unsigned/invalid certificates allowance
+      ignore-cert:
+        required: false
+        type: boolean
+        default: true
+      # Optional converting Markdown to HTML (set content_type to text/html too)
+      convert-markdown:
+        required: false
+        type: string
+        default: true
+      # attachment flag
+      attachment-flag:
+        required: false
+        type: boolean
+        default: false
+      # Optional attachments
+      attachments:
+        required: false
+        type: string
+        default: ''
+      # Optional priority: 'high', 'normal' (default) or 'low'
+      priority:
+        required: false
+        type: string
+        default: low
+
+permissions:  # added using https://github.com/step-security/secure-workflows
+  contents: read
+
+jobs:
+
+  send-email:
+    name: Send email
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@248ae51c2e8cc9622ecf50685c8bf7150c6e8813
+        with:
+          egress-policy: audit # TODO: change to 'egress-policy: block' after couple of runs
+
+      - name: check out code
+        if: inputs.attachment-flag
+        uses: actions/checkout@e2f20e631ae6d7dd3b768f56a5d2af784dd54791
+
+      - name: download attachment if attachment flag is true
+        if: inputs.attachment-flag
+        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7
+        with:
+          name: ${{ inputs.attachments }}
+
+      - name: Send email
+        uses: dawidd6/action-send-mail@6063705cefe50cb915fc53bb06d4049cae2953b2
+        with:
+          server_address: ${{ inputs.server-address }}
+          server_port: ${{ inputs.server-port }}
+          secure: ${{ inputs.secure-flag }}
+          # mail server username, this secret is configured at github org level
+          username: ${{secrets.EMAIL_USERNAME}}
+          # mail server password, this secret is configured at github org level
+          password: ${{secrets.EMAIL_PASSWORD}}
+          subject: ${{ inputs.subject }}
+          to: ${{ inputs.to }}
+          from: ${{ inputs.from }}
+          body: ${{ inputs.body }}
+          html_body: ${{ inputs.html-body }}
+          cc: ${{ inputs.cc }}
+          bcc: ${{ inputs.bcc }}
+          ignore_cert: ${{ inputs.ignore-cert }}
+          convert_markdown: ${{ inputs.convert-markdown }}
+          attachments: ${{ inputs.attachments }}
+          priority: ${{ inputs.priority }}

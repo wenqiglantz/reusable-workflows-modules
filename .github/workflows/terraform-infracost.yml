@@ -1,0 +1,67 @@
+name: "Infracost Analysis"
+
+on:
+  workflow_call:
+    inputs:
+      # working-directory is added to specify "terraform" directory in project source code as that's where the terraform files live.
+      working-directory:
+        required: false
+        type: string
+        default: 'terraform'
+      # tfvars file path
+      terraform-var-file:
+        required: false
+        type: string
+        default: ''
+
+jobs:
+  infracost:
+    name: Infracost Analysis
+
+    runs-on: ubuntu-latest
+
+    env:
+      TF_ROOT: ${{ inputs.working-directory }}
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@2e205a28d0e1da00c5f53b161f4067b052c61f34
+        with:
+          egress-policy: audit # TODO: change to 'egress-policy: block' after couple of runs
+
+      - name: Setup Infracost
+        uses: infracost/actions/setup@6bdd3cb01a306596e8a614e62af7a9c0a133bc5c
+        # See https://github.com/infracost/actions/tree/master/setup for other inputs
+        with:
+          api-key: ${{ secrets.INFRACOST_API_KEY }}
+
+      - name: Checkout
+        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8
+
+      # Generate Infracost JSON file
+      - name: Generate Infracost cost estimate
+        run: |
+          export INFRACOST_API_KEY=${{ secrets.INFRACOST_API_KEY }}
+          infracost breakdown --path=${TF_ROOT} \
+                              --terraform-var-file=${{ inputs.terraform-var-file }} \
+                              --usage-file ${TF_ROOT}/infracost-usage.yml \
+                              --format=json \
+                              --out-file=/tmp/infracost.json
+
+      # Posts a comment to the PR using the 'update' behavior.
+      # This creates a single comment and updates it. The "quietest" option.
+      # The other valid behaviors are:
+      #   delete-and-new - Delete previous comments and create a new one.
+      #   hide-and-new - Minimize previous comments and create a new one.
+      #   new - Create a new cost estimate comment on every push.
+      #   update - Update a cost estimate comment when there is a change in the cost estimate.
+      # See https://www.infracost.io/docs/features/cli_commands/#comment-on-pull-requests for other options.
+      - name: Post Infracost comment
+        run: |
+          export INFRACOST_API_KEY=${{ secrets.INFRACOST_API_KEY }}
+          infracost comment github --path=/tmp/infracost.json \
+                                   --repo=$GITHUB_REPOSITORY \
+                                   --github-token=${{github.token}} \
+                                   --commit=$GITHUB_SHA \
+                                   --behavior=update \
+                                   --policy-path=${TF_ROOT}/infracost-policy.rego
