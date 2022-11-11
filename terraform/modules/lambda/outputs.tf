@@ -1,3 +1,3 @@
 output "lambda_function_arn" {
-  value = module.lambda_function.demo
+  value = module.lambda_function
 }
