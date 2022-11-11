@@ -13,6 +13,16 @@ on:
         required: false
         type: string
         default: ''
+      # infracost usage file path
+      usage-file:
+        required: false
+        type: string
+        default: './.env/dev/infracost-usage.yml'
+      # infracost flag
+      infracost-flag:
+        required: false
+        type: boolean
+        default: true
 
 jobs:
   infracost:
@@ -42,9 +52,10 @@ jobs:
       - name: Generate Infracost cost estimate
         run: |
           export INFRACOST_API_KEY=${{ secrets.INFRACOST_API_KEY }}
-          infracost breakdown --path=${TF_ROOT} \
+          cd ${TF_ROOT}
+          infracost breakdown --path=. \
                               --terraform-var-file=${{ inputs.terraform-var-file }} \
-                              --usage-file ${TF_ROOT}/infracost-usage.yml \
+                              --usage-file ${{ inputs.usage-file }} \
                               --format=json \
                               --out-file=/tmp/infracost.json
 
