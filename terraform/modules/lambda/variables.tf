@@ -14,13 +14,13 @@ variable "lambda_functions" {
   description = "Map of Lambda functions"
   type        = map(any)
   default     = {
-    incountry-add-authorization = {
+    demo = {
       runtime                = "java11"
       handler                = "org.springframework.cloud.function.adapter.aws.FunctionInvoker"
-      zip                    = "dataresidency-0.0.1-SNAPSHOT-aws.zip"
-      function_name_variable = "addAuthorization"
-      ephemeral_storage      = "512"
-      memory_size            = "512"
+      zip                    = "demo-0.0.1-SNAPSHOT-aws.jar"
+      function_name_variable = "demo"
+      ephemeral_storage      = 512
+      memory_size            = 512
     }
   }
 }
