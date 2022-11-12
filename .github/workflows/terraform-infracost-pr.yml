@@ -83,14 +83,7 @@ jobs:
         run: |
           export INFRACOST_API_KEY=${{ secrets.INFRACOST_API_KEY }}
           cd ${TF_ROOT}
-          infracost breakdown --path=. \
-                          --format=json \
-                          --terraform-var-file=${{ inputs.terraform-var-file }} \
-                          --usage-file ${{ inputs.usage-file }} \
-                          --out-file=/tmp/infracost-with-usage.json \
-                          --show-skipped
-          # generate the html report
-          infracost output --path /tmp/infracost-with-usage.json --format html --out-file report.html
+          infracost output --path /tmp/infracost.json --show-skipped --format html --out-file report.html
 
       # upload the report to artifact so subsequent workflow can download the report and email it as attachment
       - uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb
