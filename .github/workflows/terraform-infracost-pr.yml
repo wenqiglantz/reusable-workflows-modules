@@ -29,11 +29,14 @@ jobs:
       TF_ROOT: ${{ inputs.working-directory }}
 
     steps:
+      # Harden Runner is a security action to protect our workflow from supply chain attacks
       - name: Harden Runner
         uses: step-security/harden-runner@2e205a28d0e1da00c5f53b161f4067b052c61f34
         with:
           egress-policy: audit # TODO: change to 'egress-policy: block' after couple of runs
 
+      # this step calls infracost/actions/setup@v2, which installs the latest patch version of the Infracost CLI v0.10.x and
+      # gets the backward-compatible bug fixes and new resources. Replacing the version number with git SHA is a security hardening measure.
       - name: Setup Infracost
         uses: infracost/actions/setup@6bdd3cb01a306596e8a614e62af7a9c0a133bc5c
         # See https://github.com/infracost/actions/tree/master/setup for other inputs
@@ -78,7 +81,7 @@ jobs:
                           --compare-to=/tmp/infracost-base.json \
                           --out-file=/tmp/infracost.json
 
-      # generate the html report
+      # generate the html report based on the JSON output from last step
       - name: Generate Infracost Report
         run: |
           export INFRACOST_API_KEY=${{ secrets.INFRACOST_API_KEY }}
