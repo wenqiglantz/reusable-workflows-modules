@@ -76,6 +76,7 @@ jobs:
           cd ${TF_ROOT}
           infracost diff --path=. \
                           --format=json \
+                          --show-skipped \
                           --terraform-var-file=${{ inputs.terraform-var-file }} \
                           --usage-file ${{ inputs.usage-file }} \
                           --compare-to=/tmp/infracost-base.json \
