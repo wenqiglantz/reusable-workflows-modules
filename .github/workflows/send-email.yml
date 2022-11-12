@@ -7,12 +7,12 @@ on:
       server-address:
         required: false
         type: string
-        default: 'email-smtp.eu-west-1.amazonaws.com'
+        default: 'smtp.gmail.com'
       # Server port
       server-port:
         required: false
         type: number
-        default: 587
+        default: 465
       # Optional whether this connection use TLS
       secure-flag:
         required: false
@@ -27,7 +27,7 @@ on:
       from:
         required: false
         type: string
-        default: '"GitHub Actions" <gitaction-notification@agcloud.bz>'
+        default: '"GitHub Actions" <gitaction-notification@gmail.com>'
       # Required recipients' addresses, if multiple, separate by comma
       to:
         required: true
@@ -47,7 +47,7 @@ on:
       body:
         required: false
         type: string
-        default: 'Build job of ${{github.repository}} completed successfully!'
+        default: ''
       # Optional HTML body read from file
       html-body:
         required: false
