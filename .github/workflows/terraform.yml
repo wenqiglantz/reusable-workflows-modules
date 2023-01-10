@@ -56,6 +56,9 @@ jobs:
       - name: Terraform Init
         id: init
         run: |
+          # passes a NPM_TOKEN which has access to private repo as client app doesn't pass such credential in when calling tf composite module.
+          # credit: https://github.com/hashicorp/setup-terraform/issues/33
+          git config --global url."https://oauth2:${{ secrets.NPM_TOKEN }}@github.com".insteadOf https://github.com
           rm -rf .terraform
           terraform init -backend-config='./.env/${{ github.event.inputs.environment || 'dev' }}/backend.tfvars' -upgrade=true -no-color -input=false
 
