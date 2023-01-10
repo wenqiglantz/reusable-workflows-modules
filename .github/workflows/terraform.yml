@@ -50,18 +50,40 @@ jobs:
           role-to-assume: ${{ secrets.TERRAFORM_ROLE_TO_ASSUME }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+      - uses: terraform-linters/setup-tflint@ba6bb2989f94daf58a4cc6eac2c1ca7398a678bf # v3.0.0
+        name: Setup TFLint
+        with:
+          tflint_version: latest
+
+      - name: Init TFLint
+        run: tflint --init
+
+      - name: Run TFLint
+        run: tflint -f compact
+
+      - name: Run Checkov action
+        uses: bridgecrewio/checkov-action@3854b91536303a096e7693434ef98706a0be82cb # master
+        with:
+          directory: ${{ inputs.working-directory }}
+          quiet: true # optional: display only failed checks
+          soft_fail: true # optional: do not return an error code if there are failed checks
+          framework: terraform # optional: run only on a specific infrastructure {cloudformation,terraform,kubernetes,all}
+          output_format: sarif # optional: the output format, one of: cli, json, junitxml, github_failed_only, or sarif. Default: sarif
+          output_file_path: reports/results.sarif # folder and name of results file
+          download_external_modules: true # optional: download external terraform modules from public git repositories and terraform registry
+          log_level: DEBUG # optional: set log level. Default WARNING
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@7b3bcd8d76f3cbaec0a3564e53de7c9adf00f0a7
 
       - name: Terraform Init
         id: init
         run: |
-          # passes a NPM_TOKEN which has access to private repo as client app doesn't pass such credential in when calling tf composite module.
+          # passes a NPM_TOKEN which has access to private repo as client app doesn't pass such credential in when calling tf reusable module.
           # credit: https://github.com/hashicorp/setup-terraform/issues/33
           git config --global url."https://oauth2:${{ secrets.NPM_TOKEN }}@github.com".insteadOf https://github.com
           rm -rf .terraform
           terraform init -backend-config='./.env/${{ github.event.inputs.environment || 'dev' }}/backend.tfvars' -upgrade=true -no-color -input=false
-
       - name: Terraform Plan
         id: plan
         run: |
@@ -69,7 +91,6 @@ jobs:
           export TF_VAR_deploy_repo=${DEPLOY_REPO,,}
           export TF_VAR_deploy_env=${DEPLOY_ENV,,}
           terraform plan -input=false -var-file=.env/${{ github.event.inputs.environment || 'dev' }}/terraform.tfvars -no-color
-
       - name: Terraform Apply
         if: github.ref == 'refs/heads/${{ inputs.apply-branch }}' && github.event_name == 'push'
         id: apply
@@ -78,7 +99,6 @@ jobs:
           export TF_VAR_deploy_repo=${DEPLOY_REPO,,}
           export TF_VAR_deploy_env=${DEPLOY_ENV,,}
           terraform apply -auto-approve -input=false -var-file=.env/${{ github.event.inputs.environment || 'dev' }}/terraform.tfvars
-
       - name: Terraform destroy
         # If you want to use this workflow to run terraform destroy, create a feature branch "destroy", trigger this workflow from that branch to destroy.
         if: github.ref == 'refs/heads/destroy'
