@@ -31,10 +31,6 @@ jobs:
     # default environment to "dev" if it is not passed in through workflow_dispatch manual trigger
     environment: ${{ github.event.inputs.environment || 'dev' }}
 
-    env:
-      DEPLOY_REPO: ${{ github.event.repository.name }}
-      DEPLOY_ENV: ${{ github.event.inputs.environment || 'dev' }}
-
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@ebacdc22ef6c2cfb85ee5ded8f2e640f4c776dd5
@@ -84,27 +80,21 @@ jobs:
           git config --global url."https://oauth2:${{ secrets.NPM_TOKEN }}@github.com".insteadOf https://github.com
           rm -rf .terraform
           terraform init -backend-config='./.env/${{ github.event.inputs.environment || 'dev' }}/backend.tfvars' -upgrade=true -no-color -input=false
+      
       - name: Terraform Plan
         id: plan
         run: |
-          # convert repo and env to lower case and pass to Terraform as env variables
-          export TF_VAR_deploy_repo=${DEPLOY_REPO,,}
-          export TF_VAR_deploy_env=${DEPLOY_ENV,,}
           terraform plan -input=false -var-file=.env/${{ github.event.inputs.environment || 'dev' }}/terraform.tfvars -no-color
+      
       - name: Terraform Apply
         if: github.ref == 'refs/heads/${{ inputs.apply-branch }}' && github.event_name == 'push'
         id: apply
         run: |
-          # convert repo and env to lower case and pass to Terraform as env variables
-          export TF_VAR_deploy_repo=${DEPLOY_REPO,,}
-          export TF_VAR_deploy_env=${DEPLOY_ENV,,}
           terraform apply -auto-approve -input=false -var-file=.env/${{ github.event.inputs.environment || 'dev' }}/terraform.tfvars
+      
       - name: Terraform destroy
         # If you want to use this workflow to run terraform destroy, create a feature branch "destroy", trigger this workflow from that branch to destroy.
         if: github.ref == 'refs/heads/destroy'
         id: destroy
         run: |
-          # convert repo and env to lower case and pass to Terraform as env variables
-          export TF_VAR_deploy_repo=${DEPLOY_REPO,,}
-          export TF_VAR_deploy_env=${DEPLOY_ENV,,}
           terraform destroy -auto-approve -input=false -var-file=.env/${{ github.event.inputs.environment || 'dev' }}/terraform.tfvars
