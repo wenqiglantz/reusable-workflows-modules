@@ -1,0 +1,71 @@
+name: Release workflow for Spring Boot microservices or shared libraries
+
+on:
+  workflow_call:
+    inputs:
+      # working-directory is added to accommodate monorepo.  For multi repo, defaults to '.', current directory
+      working-directory:
+        required: false
+        type: string
+        default: '.'
+      # pass in java version to allow different app requiring different java versions to reuse the same workflow, default to java 17
+      java-version:
+        required: false
+        type: string
+        default: '17'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    # accommodating monorepo, this sets the working directory at the job level, for multi repo, defaults to "."
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+
+    # default to dev env for publishing release version to ECR as AWS credential is tied to env.
+    environment: 'dev'
+
+    # run release flow only if the triggering branch starts with "release/"
+    if: startsWith(github.ref, 'refs/heads/release/')
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@ebacdc22ef6c2cfb85ee5ded8f2e640f4c776dd5
+        with:
+          egress-policy: audit # TODO: change to 'egress-policy: block' after couple of runs
+
+      - name: Checkout Code
+        uses: actions/checkout@d171c3b028d844f2bf14e9fdec0c58114451e4bf
+
+      - name: Cache local Maven repository
+        uses: actions/cache@9b0c1fce7a93df8e3bb8926b0d6e9d89e92f20a7
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-maven-
+
+      - name: Setup jdk
+        uses: actions/setup-java@19eeec562b37d29a1ad055b7de9c280bd0906d8d
+        with:
+          java-version: ${{ inputs.java-version }}
+          distribution: 'adopt'
+          cache: maven
+          # this action creates a maven settings.xml file as well, server-id corresponds to what's defined in project pom distribution management section
+          server-id: github
+
+      # create a git user to push to github automated pom snapshot release, next version bump-up etc.
+      - name: Configure Git user
+        run: |
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+
+      - name: Release JAR
+        run: mvn -B release:prepare release:perform
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # recommended by github as sometimes github may throw 500 internal server error during high load, adding retry as workaround
+          MAVEN_OPTS: -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.class=standard -Dmaven.wagon.http.retryHandler.count=3
+
+      - name: Rollback if failure
+        if: failure()
+        run: mvn -B release:rollback
