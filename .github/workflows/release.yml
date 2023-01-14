@@ -45,7 +45,7 @@ jobs:
           restore-keys: ${{ runner.os }}-maven-
 
       - name: Setup jdk
-        uses: actions/setup-java@19eeec562b37d29a1ad055b7de9c280bd0906d8d
+        uses: actions/setup-java@1df8dbefe2a8cbc99770194893dd902763bee34b
         with:
           java-version: ${{ inputs.java-version }}
           distribution: 'adopt'
