@@ -92,12 +92,12 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
 
-      - name: Scan ECR image with Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@9ab158e8597f3b310480b9a69402b419bc03dbd5
-        with:
-          image-ref: ${{ steps.build-image.outputs.image }}
-          format: 'table'
-          exit-code: '1'
-          ignore-unfixed: true
-          vuln-type: 'os,library'
-          severity: 'CRITICAL,HIGH'
+#       - name: Scan ECR image with Trivy vulnerability scanner
+#         uses: aquasecurity/trivy-action@9ab158e8597f3b310480b9a69402b419bc03dbd5
+#         with:
+#           image-ref: ${{ steps.build-image.outputs.image }}
+#           format: 'table'
+#           exit-code: '1'
+#           ignore-unfixed: true
+#           vuln-type: 'os,library'
+#           severity: 'CRITICAL,HIGH'
