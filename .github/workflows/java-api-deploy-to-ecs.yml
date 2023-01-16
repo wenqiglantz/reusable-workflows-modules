@@ -29,9 +29,10 @@ jobs:
     # default environment to "dev" if it is not passed in through workflow_dispatch manual trigger
     environment: ${{ inputs.env || 'dev' }}
 
-    # only execute if PR is merged or manual trigger
-    if: github.event.pull_request.merged || inputs.env != null
-
+    # only execute if PR is merged or manual trigger, or not raised by dependabot
+    #if: github.event.pull_request.merged || inputs.env != null
+    if: (github.event.pull_request.merged || inputs.env != null) && github.actor != 'dependabot[bot]'
+    
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@ebacdc22ef6c2cfb85ee5ded8f2e640f4c776dd5
