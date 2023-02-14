@@ -1,0 +1,136 @@
+name: CI Graviton workflow for Spring Boot microservices
+
+on:
+  workflow_call:
+    inputs:
+      # pass in environment through manual trigger, if not passed in, default to 'dev'
+      env:
+        required: true
+        type: string
+        default: 'dev'
+      # working-directory is added to accommodate monorepo.  For multi repo, defaults to '.', current directory
+      working-directory:
+        required: false
+        type: string
+        default: '.'
+      # pass in java version to allow different app requiring different java versions to reuse the same workflow, default to java 17
+      java-version:
+        required: false
+        type: string
+        default: '17'
+      # allowing calling workflows to pass in maven parameter(s) such as '-Dmaven.test.skip' for certain apps, default to blank, not to skip test
+      maven-params:
+        required: false
+        type: string
+        default: ''
+      dockerfile-location:
+        required: false
+        type: string
+        default: './Dockerfile'
+      image-platforms:
+        required: false
+        type: string
+        default: 'linux/amd64,linux/arm64'
+
+permissions:  # added using https://github.com/step-security/secure-workflows
+  contents: read
+
+jobs:
+
+  build:
+    permissions:
+      contents: read  # for docker/build-push-action to read repo content
+      id-token: write  # for aws-actions/configure-aws-credentials to get credentials from GitHub OIDC provider
+    name: Build and Test
+    runs-on: ubuntu-latest
+
+    # accommodating monorepo, this sets the working directory at the job level, for multi repo, defaults to "."
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+
+    # important to specify environment here, defaults to 'dev', so github ations knows where to retrieve the secrets
+    environment: ${{ inputs.env || 'dev' }}
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
+      ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@18bf8ad2ca49c14cbb28b91346d626ccfb00c518
+        with:
+          egress-policy: audit
+
+      - name: Checkout Code
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@7c78a8afc01f24051c3bc7aaed57d9699c59c5fa 
+        with:
+          role-to-assume: ${{ secrets.ROLE_TO_ASSUME }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@e81a89b1732b9c48d79cd809d8d81d79c4647a18 # v2.1.0
+        with:
+          platforms: arm64, amd64 # By default QEMU will create almost a dozen vm’s. Limit it to just the architectures we care about.
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f03ac48505955848960e80bbb68046aa35c7b9e7 # v2.4.1
+
+      - name: Setup jdk
+        uses: actions/setup-java@3f07048e3d294f56e9b90ac5ea2c6f74e9ad0f98
+        with:
+          java-version: ${{ inputs.java-version }}
+          distribution: 'adopt'
+          cache: maven
+
+      - name: Build with Maven
+        run: mvn clean install ${{ inputs.maven-params }} -B --file pom.xml
+
+      - name: Set project version as environment variable
+        run: echo "PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
+
+      - name: Print debug info
+        run: |
+          echo environment is ${{ inputs.env }}
+          echo working_directory is ${{ inputs.working-directory }}
+          echo project version is ${{ env.PROJECT_VERSION }}
+          echo java-version is ${{ inputs.java-version }}
+          echo AWS_REGION is ${{ secrets.AWS_REGION }} | sed -e 's/\(.\)/\1 /g'
+          echo ECR_REGISTRY is ${{ secrets.ECR_REGISTRY }} | sed -e 's/\(.\)/\1 /g'
+          echo ECR_REPOSITORY_NAME is ${{ secrets.ECR_REPOSITORY_NAME }} | sed -e 's/\(.\)/\1 /g'
+
+      - name: Login to ECR
+        run: |
+          aws ecr get-login-password --region $AWS_REGION | docker login -u AWS --password-stdin $ECR_REGISTRY
+
+      - name: Build multi-arch container image and push to ECR
+        id: build-image
+        uses: docker/build-push-action@3b5e8027fcad23fda98b2e3ac259d8d67585f671 
+        with:
+          context: ${{ inputs.working-directory }}
+          file: ${{ inputs.dockerfile-location }}
+          platforms: ${{ inputs.image-platforms }}
+          push: true
+          tags: |
+            ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.PROJECT_VERSION }}
+
+      - name: verify image
+        run:
+          docker buildx imagetools inspect ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.PROJECT_VERSION }}
+
+      - name: docker manifest inspect
+        run:
+          docker manifest inspect --verbose ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.PROJECT_VERSION }}
+
+      - name: Scan image with Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@cff3e9a7f62c41dd51975266d0ae235709e39c41
+        with:
+          image-ref: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.PROJECT_VERSION }}
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
