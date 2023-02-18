@@ -1,15 +1,13 @@
 name: Build and test workflow
 
 on:
-  workflow_dispatch:
+  workflow_call:
     inputs:
-      environment:
-        description: 'Environment to run the workflow against'
-        type: environment
+      # pass in environment through manual trigger, if not passed in, default to 'dev'
+      env:
         required: true
-
-permissions:  
-  contents: read
+        type: string
+        default: 'dev'
 
 jobs:
 
@@ -19,10 +17,6 @@ jobs:
 
     outputs:
       image-tag: ${{ steps.set-image-tag.outputs.IMAGE_TAG }}
-
-    permissions:
-      id-token: write # need this for OIDC
-      contents: read
 
     # important to specify environment here, defaults to 'dev', so github ations knows where to retrieve the secrets
     environment: ${{ inputs.env || 'dev' }}
@@ -85,7 +79,6 @@ jobs:
           aws ecr get-login-password --region $AWS_REGION | docker login -u AWS --password-stdin $ECR_REGISTRY
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
-
 
       - name: Scan ECR image with Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@9ab158e8597f3b310480b9a69402b419bc03dbd5
