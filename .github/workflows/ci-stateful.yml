@@ -8,6 +8,10 @@ on:
         required: true
         type: string
         default: 'dev'
+    outputs:
+      image-tag:
+        description: "image tag"
+        value: ${{ jobs.build-and-test.outputs.image-tag }}
 
 jobs:
 
