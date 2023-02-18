@@ -1,0 +1,99 @@
+name: Build and test workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to run the workflow against'
+        type: environment
+        required: true
+
+permissions:  
+  contents: read
+
+jobs:
+
+  build-and-test:
+    name: Build, Test, release
+    runs-on: ubuntu-latest
+
+    outputs:
+      image-tag: ${{ steps.set-image-tag.outputs.IMAGE_TAG }}
+
+    permissions:
+      id-token: write # need this for OIDC
+      contents: read
+
+    # important to specify environment here, defaults to 'dev', so github ations knows where to retrieve the secrets
+    environment: ${{ inputs.env || 'dev' }}
+
+    # only run this job for auto trigger by PR merge, if manual trigger for other environments than dev,
+    # no need to run this job as the image will be pulled and promoted to envs higher than dev
+    # also dependabot PRs do not need to run this flow as GitHub prohibits dependabot PRs to access workflows
+    # dealing with secrets due to security reason.
+    if: (inputs.env == null || inputs.env == 'dev') && github.actor != 'dependabot[bot]'
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@ebacdc22ef6c2cfb85ee5ded8f2e640f4c776dd5
+        with:
+          egress-policy: audit
+
+      - name: Checkout Code
+        uses: actions/checkout@d0651293c4a5a52e711f25b41b05b2212f385d28
+        with:
+          token: ${{ secrets.NPM_TOKEN }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@05b148adc31e091bafbaf404f745055d4d3bc9d2
+        with:
+          role-to-assume: ${{ secrets.ROLE_TO_ASSUME }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Setup jdk
+        uses: actions/setup-java@19eeec562b37d29a1ad055b7de9c280bd0906d8d
+        with:
+          java-version: 17
+          distribution: 'adopt'
+          cache: maven
+
+      - name: Set image tag output
+        id: set-image-tag
+        run: |
+          echo "IMAGE_TAG=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)-$(date +'%Y-%m-%d_%H-%M-%S')" >> $GITHUB_OUTPUT
+
+      - name: Print debug info
+        run: |
+          echo environment is ${{ inputs.env }}
+          echo ECR_REPOSITORY_NAME is ${{ secrets.ECR_REPOSITORY_NAME }} | sed -e 's/\(.\)/\1 /g'
+          echo GITHUB_WORKSPACE is $GITHUB_WORKSPACE
+          echo image tag is ${{ steps.set-image-tag.outputs.IMAGE_TAG }}
+          echo branch name is ${{ github.ref_name }}
+
+      - name: Maven build
+        run: mvn clean install -B --file pom.xml
+
+      - name: Build, tag, and push image to AWS ECR
+        id: build-image
+        env:
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
+          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
+          IMAGE_TAG: ${{ steps.set-image-tag.outputs.IMAGE_TAG }}
+        run: |
+          # Build a docker container and push it to ECR so that it can be deployed to ECS.
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          aws ecr get-login-password --region $AWS_REGION | docker login -u AWS --password-stdin $ECR_REGISTRY
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+
+      - name: Scan ECR image with Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@9ab158e8597f3b310480b9a69402b419bc03dbd5
+        with:
+          image-ref: ${{ steps.build-image.outputs.image }}
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+          timeout: 15m
