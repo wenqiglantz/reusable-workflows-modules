@@ -86,6 +86,7 @@ jobs:
           echo image tag: ${{ inputs.image-tag }}
           echo env: ${{ inputs.env }}
           echo git repo: "${{ github.repository }}" | awk -F/ '{print $2}'
+          echo "REPO_NAME='${{ github.repository }}' | awk -F/ '{print $2}'" >> $GITHUB_ENV
 
       # need to unset the region and credentials from deployment steps
       # credit: https://github.com/aws-actions/configure-aws-credentials/issues/340#issuecomment-1384364458
@@ -121,5 +122,5 @@ jobs:
             { 
               image_tag: "${{ inputs.image-tag }}",
               environment: "${{ inputs.env }}",
-              repository: "${{ github.repository }}" | awk -F/ '{print $2}'
+              repository: "${{ env.REPO_NAME }}'
             }
