@@ -1,0 +1,125 @@
+name: Deploy to ECS Fargate and track deployment in DynamoDB
+
+on:
+  workflow_call:
+    inputs:
+      # pass in environment through manual trigger, if not passed in, default to 'dev'
+      env:
+        required: true
+        type: string
+        default: 'dev'
+      # working-directory is added to accommodate monorepo.  For multi repo, defaults to '.', current directory
+      working-directory:
+        required: false
+        type: string
+        default: '.'
+      # image tag
+      image-tag:
+        required: true
+        type: string
+
+jobs:
+
+  deploy:
+    name: Deploy to AWS ECS Fargate
+    runs-on: ubuntu-latest
+
+    # accommodating monorepo, this sets the working directory at the job level, for multi repo, defaults to "."
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+
+    # important to specify the environment here so workflow knows where to deploy your artifact to.
+    # default environment to "dev" if it is not passed in through workflow_dispatch manual trigger
+    environment: ${{ inputs.env || 'dev' }}
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@18bf8ad2ca49c14cbb28b91346d626ccfb00c518
+        with:
+          egress-policy: audit
+
+      - name: Checkout Code
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@4f2f92e5ab58e748e0c4c845528ecf8c646d8373
+        with:
+          role-to-assume: ${{ secrets.ROLE_TO_ASSUME }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      
+      #      - name: Download task definition
+      #        run: |
+      #          aws ecs describe-task-definition --task-definition ${{ secrets.ECS_TASK_DEFINITION }} --query taskDefinition | jq -r 'del(
+      #                  .taskDefinitionArn,
+      #                  .requiresAttributes,
+      #                  .compatibilities,
+      #                  .revision,
+      #                  .status,
+      #                  .registeredAt,
+      #                  .registeredBy
+      #                )' > task-definition.json
+      #
+      #      - name: Fill in the new image ID and pass in the environment variable in the ECS task definition
+      #        id: task-def
+      #        uses: aws-actions/amazon-ecs-render-task-definition@61b0c00c3743b70987a73a1faf577f0d167d1574
+      #        with:
+      #          # important to specify working directory here to accommodate monorepo
+      #          task-definition: ${{ inputs.working-directory }}/task-definition.json
+      #          container-name: ${{ secrets.CONTAINER_NAME }}
+      #          image: ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY_NAME }}:${{ inputs.image-tag }}
+      #          # this ENVIRONMENT is passed into the active spring profile in start-service.sh in the startup command,
+      #          # so it knows which application yml to retrieve based on the active spring profile
+      #          environment-variables: |
+      #            ENVIRONMENT=${{ inputs.env || 'dev' }}
+      #
+      #      - name: Deploy Amazon ECS task definition
+      #        uses: aws-actions/amazon-ecs-deploy-task-definition@df9643053eda01f169e64a0e60233aacca83799a
+      #        with:
+      #          task-definition: ${{ steps.task-def.outputs.task-definition }}
+      #          service: ${{ secrets.ECS_SERVICE }}
+      #          cluster: ${{ secrets.ECS_CLUSTER }}
+      #          wait-for-service-stability: true
+
+      - name: Print deployment tracking info
+        run: |
+          echo image tag: ${{ inputs.image-tag }}
+          echo env: ${{ inputs.env }}
+          echo git repo: "${{ github.repository }}" | awk -F/ '{print $2}'
+
+      # need to unset the region and credentials from deployment steps
+      # credit: https://github.com/aws-actions/configure-aws-credentials/issues/340#issuecomment-1384364458
+      - name: Configure AWS Credentials again with IAM user
+        uses: aws-actions/configure-aws-credentials@4f2f92e5ab58e748e0c4c845528ecf8c646d8373
+        env:
+          AWS_DEFAULT_REGION:
+          AWS_REGION:
+          AWS_ACCESS_KEY_ID:
+          AWS_SECRET_ACCESS_KEY:
+          AWS_SESSION_TOKEN:
+        with:
+          aws-access-key-id: ${{ secrets.DYNAMODB_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.DYNAMODB_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Persist deployment tracking info in DynamoDB
+        uses: mooyoul/dynamodb-actions@05013884a41c0972f87c4526da71939b36b86da1
+        env:
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.DYNAMODB_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.DYNAMODB_AWS_SECRET_ACCESS_KEY }}
+          AWS_SESSION_TOKEN:
+          AWS_ROLE_ARN:
+          AWS_WEB_IDENTITY_TOKEN_FILE:
+          AWS_ROLE_SESSION_NAME:
+        with:
+          operation: put
+          region: ${{ secrets.AWS_REGION }}
+          table: deployment-tracking
+          item: |
+            { 
+              image_tag: "${{ inputs.image-tag }}",
+              environment: "${{ inputs.env }}",
+              repository: "${{ github.repository }}" | awk -F/ '{print $2}'
+            }
