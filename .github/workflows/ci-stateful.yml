@@ -57,7 +57,7 @@ jobs:
       - name: Set image tag output
         id: set-image-tag
         run: |
-          echo "IMAGE_TAG=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)-$(date +'%Y-%m-%d_%H-%M-%S')" >> $GITHUB_OUTPUT
+          echo "IMAGE_TAG=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)-$(git rev-parse --short "$GITHUB_SHA")-$(date +'%Y-%m-%d_%H-%M-%S')" >> $GITHUB_OUTPUT
 
       - name: Print debug info
         run: |
