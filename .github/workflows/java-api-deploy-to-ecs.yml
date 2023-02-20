@@ -72,7 +72,7 @@ jobs:
 
       - name: Fill in the new image ID and pass in the environment variable in the ECS task definition
         id: task-def
-        uses: aws-actions/amazon-ecs-render-task-definition@f15ed65f9cc12455139db0f8e8ff6f6aaad6dfda
+        uses: aws-actions/amazon-ecs-render-task-definition@61b0c00c3743b70987a73a1faf577f0d167d1574
         with:
           # important to specify working directory here to accommodate monorepo
           task-definition: ${{ inputs.working-directory }}/task-definition.json
