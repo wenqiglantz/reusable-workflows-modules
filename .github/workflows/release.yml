@@ -38,7 +38,7 @@ jobs:
         uses: actions/checkout@d171c3b028d844f2bf14e9fdec0c58114451e4bf
 
       - name: Cache local Maven repository
-        uses: actions/cache@9b0c1fce7a93df8e3bb8926b0d6e9d89e92f20a7
+        uses: actions/cache@69d9d449aced6a2ede0bc19182fadc3a0a42d2b0
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
