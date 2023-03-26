@@ -23,7 +23,12 @@ on:
         required: false
         type: string
         default: ''
-
+      # flag to indicate whether to run TruffleHog scan
+      trufflehog-scan-flag:
+        required: false
+        type: boolean
+        default: false
+        
 jobs:
 
   build:
@@ -91,6 +96,15 @@ jobs:
           aws ecr get-login-password --region $AWS_REGION | docker login -u AWS --password-stdin $ECR_REGISTRY
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+
+      - name: TruffleHog Secrets Scan
+        if: inputs.trufflehog-scan-flag
+        uses: trufflesecurity/trufflehog@2b1c42ceb17595fd68e183e881d9b70d84e9d3c1
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --debug --only-verified
 
 #       - name: Scan ECR image with Trivy vulnerability scanner
 #         uses: aquasecurity/trivy-action@9ab158e8597f3b310480b9a69402b419bc03dbd5
