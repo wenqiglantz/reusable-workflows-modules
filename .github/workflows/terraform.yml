@@ -13,11 +13,6 @@ on:
         required: false
         type: string
         default: 'main'
-      # flag whether to create secret in AWS secrets manager
-      create-secret-flag:
-        required: false
-        type: boolean
-        default: false
         
 defaults:
   run:
@@ -77,10 +72,10 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@7b3bcd8d76f3cbaec0a3564e53de7c9adf00f0a7
 
-      # if flag is set to true, extract secret from github secrets and save to a json file at the working-directory
+      # extract secret from github secrets and save to a temp json file
       # to be retrieved by terraform to create secret in AWS secrets manager
+      # temp file gets discarded at the end of the workflow run
       - name: Create json file from github secrets
-        if: inputs.create-secret-flag
         uses: jsdaniell/create-json@6c509494d7b009b842fb0a158852ba244920bc38
         with:
           name: "secret.json"
