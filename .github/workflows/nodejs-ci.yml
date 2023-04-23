@@ -1,0 +1,49 @@
+name: CI workflow for node.js app
+
+on:
+  workflow_call:
+    inputs:
+      # working-directory is added to accommodate monorepo.  For multi repo, defaults to '.', current directory
+      working-directory:
+        required: false
+        type: string
+        default: '.'
+
+jobs:
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    # accommodating monorepo, this sets the working directory at the job level, for multi repo, defaults to "."
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@03bee3930647ebbf994244c21ddbc0d4933aab4f
+        with:
+          egress-policy: audit # TODO: change to 'egress-policy: block' after couple of runs
+
+      - name: Checkout Code
+        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab
+
+      - name: Setup Node.js 16.x
+        uses: actions/setup-node@64ed1c7eab4cce3362f8c340dee64e5eaeef8f7c
+        with:
+          node-version: 16.x
+          cache: 'npm'
+          cache-dependency-path: '${{ inputs.working-directory }}/package-lock.json'
+
+      - name: Install dependencies
+        run: npm install
+        env:
+          CI: true
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }} # for pkg install from GitHub Packages
+
+      - name: npm test
+        run: npm test
+
+      - name: Generate build
+        run: npm run build
