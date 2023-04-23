@@ -1,0 +1,58 @@
+name: Publish Node.js npm package to GitHub Packages
+
+on:
+  workflow_call:
+    inputs:
+      # working-directory is added to accommodate monorepo.  For multi repo, defaults to '.', current directory
+      working-directory:
+        required: false
+        type: string
+        default: '.'
+
+jobs:
+
+  publish:
+    name: Publish
+    runs-on: ubuntu-latest
+
+    # accommodating monorepo, this sets the working directory at the job level, for multi repo, defaults to "."
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@03bee3930647ebbf994244c21ddbc0d4933aab4f
+        with:
+          egress-policy: audit # TODO: change to 'egress-policy: block' after couple of runs
+
+      - name: Checkout Code
+        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js 16.x
+        uses: actions/setup-node@64ed1c7eab4cce3362f8c340dee64e5eaeef8f7c
+        with:
+          node-version: 16.x
+          cache: 'npm'
+          cache-dependency-path: '${{ inputs.working-directory }}/package-lock.json'
+
+      - name: npm install
+        run: npm install
+
+      - name: npm build
+        run: npm run build
+
+      # create a .npmrc file before publishing the package to GitHub Packages.
+      - name: create .npmrc file
+        run: |
+          echo @wenqiglantz:https://npm.pkg.github.com/ > ${{ inputs.working-directory }}/.npmrc
+          echo '//npm.pkg.github.com/:_authToken=${NPM_TOKEN}' >> ${{ inputs.working-directory }}/.npmrc
+
+      - name: npm publish
+        run: npm publish
+        working-directory: ${{ inputs.working-directory }}
+        env:
+          NPM_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
