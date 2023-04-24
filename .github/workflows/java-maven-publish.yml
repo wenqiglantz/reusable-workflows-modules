@@ -1,0 +1,69 @@
+name: Maven publish workflow for shared libraries and services
+
+on:
+  workflow_call:
+    inputs:
+      # working-directory is added to accommodate monorepo.  For multi repo, defaults to '.', current directory
+      working-directory:
+        required: false
+        type: string
+        default: '.'
+      # artifact registry, passed into setup-java action, which creates a maven settings.xml file as well, server-id corresponds to what's defined in project pom distribution management section, github for github packages, or nexus for nexus
+      server-id:
+        required: false
+        type: string
+        default: 'github'
+      # flag to indicate whether to install private lib from github packages
+      install-private-lib:
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+
+  build-and-publish:
+    name: Build and Publish
+    runs-on: ubuntu-latest
+
+    # accommodating monorepo, this sets the working directory at the job level, for multi repo, defaults to "."
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@03bee3930647ebbf994244c21ddbc0d4933aab4f
+        with:
+          egress-policy: audit # TODO: change to 'egress-policy: block' after couple of runs
+
+      - name: Checkout Code
+        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab
+
+      - name: Cache local Maven repository
+        uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-maven-
+
+      - name: Setup jdk
+        uses: actions/setup-java@5ffc13f4174014e2d4d4572b3d74c3fa61aeb2c2
+        with:
+          java-version: 17
+          distribution: 'adopt'
+          cache: maven
+          # this action creates a maven settings.xml file as well, server-id corresponds to what's defined in project pom distribution management section
+          server-id: ${{ inputs.server-id }}
+
+      - name: Install internal package and build/publish with Maven
+        if: inputs.install-private-lib
+        # settings.xml contain github package credentials, defined as repo secrets, this tells maven to install libs from both maven central and github packages and build/publish
+        run: mvn -s $GITHUB_WORKSPACE/settings.xml -B deploy --file pom.xml
+        env:
+          PAT: ${{ secrets.NPM_TOKEN }}
+
+      - name: Build/publish with Maven
+        if: inputs.install-private-lib == false
+        run: mvn -B deploy --file pom.xml
+        env:
+          PAT: ${{ secrets.NPM_TOKEN }}
