@@ -23,6 +23,11 @@ on:
         required: false
         type: string
         default: ''
+      # flag to indicate whether to install private lib from github packages
+      install-private-lib:
+        required: false
+        type: boolean
+        default: false
       # flag to indicate whether to run TruffleHog scan
       trufflehog-scan-flag:
         required: false
@@ -70,12 +75,19 @@ jobs:
           distribution: 'adopt'
           cache: maven
 
-      - name: Build with Maven
-        run: mvn clean install ${{ inputs.maven-params }} --file pom.xml
-
-      - name: Set project version as environment variable
-        run: echo "PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
-
+      - name: Set project version as environment variable and build with maven
+        env:
+          INSTALL_PRIVATE_LIB: ${{ inputs.install-private-lib }}
+          PAT: ${{ secrets.NPM_TOKEN }}
+        run: |          
+          if [[ "$INSTALL_PRIVATE_LIB" == true ]]; then
+            echo "PROJECT_VERSION=$(mvn -s $GITHUB_WORKSPACE/settings.xml help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
+            mvn -s $GITHUB_WORKSPACE/settings.xml clean install ${{ inputs.maven-params }} -B --file pom.xml            
+          else
+            echo "PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
+            mvn clean install ${{ inputs.maven-params }} -B --file pom.xml
+          fi
+          
       - name: Print debug info
         run: |
           echo environment is ${{ inputs.env }}
