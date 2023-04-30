@@ -16,9 +16,9 @@ variable "resource_name_prefix" {
   default     = ""
 }
 
-variable "lambda_code_path" {
+variable "lambda_code_file" {
   type        = string
-  description = "Lambda code path"
+  description = "Lambda code jar file"
   default     = ""
 }
 
