@@ -12,8 +12,8 @@ provider "aws" {
   # default tags per https://registry.terraform.io/providers/hashicorp/aws/latest/docs#default_tags-configuration-block
   default_tags {
     tags = {
-      env            = "dev"
-      ManagedBy      = "Terraform"
+      env       = "dev"
+      ManagedBy = "Terraform"
     }
   }
 }
@@ -21,7 +21,7 @@ provider "aws" {
 //using archive_file data source to zip the lambda code:
 data "archive_file" "lambda_code" {
   type        = "zip"
-  source_file  = "${path.module}/${var.lambda_jar_relative_path}"
+  source_file = "${path.module}/${var.lambda_jar_relative_path}"
   output_path = "${path.module}/${var.s3_object_key}"
 }
 
