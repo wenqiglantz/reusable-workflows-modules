@@ -1,9 +1,9 @@
 output "lambda_name" {
-  value = {for k, v in aws_lambda_function.lambda_function: k => v.function_name}
-  description = "Lambda function names in key/value map"
+  value = aws_lambda_function.lambda_function.function_name
+  description = "Lambda function name"
 }
 
 output "lambda_arn" {
-  value = {for k, v in aws_lambda_function.lambda_function: k => v.arn}
-  description = "Lambda function ARNs in key/value map"
+  value = aws_lambda_function.lambda_function.arn
+  description = "Lambda function ARN"
 }

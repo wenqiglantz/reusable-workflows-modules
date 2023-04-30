@@ -46,6 +46,6 @@ No modules.
 
 | Name | Description |
 |------|-------------|
-| <a name="output_lambda_arn"></a> [lambda\_arn](#output\_lambda\_arn) | Lambda function ARNs in key/value map |
-| <a name="output_lambda_name"></a> [lambda\_name](#output\_lambda\_name) | Lambda function names in key/value map |
+| <a name="output_lambda_arn"></a> [lambda\_arn](#output\_lambda\_arn) | Lambda function ARN |
+| <a name="output_lambda_name"></a> [lambda\_name](#output\_lambda\_name) | Lambda function name |
 <!-- END_TF_DOCS -->
