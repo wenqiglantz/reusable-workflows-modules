@@ -67,10 +67,10 @@ resource "aws_lambda_function" "lambda_function" {
   ephemeral_storage {
     size = var.lambda_function.ephemeral_storage
   }
-  publish    = true
-  snap_start {
-    apply_on = "PublishedVersions"
-  }
+#  publish    = true
+#  snap_start {
+#    apply_on = "PublishedVersions"
+#  }
 
   filename = data.archive_file.lambda_zip.output_path
   role     = aws_iam_role.lambda.arn
