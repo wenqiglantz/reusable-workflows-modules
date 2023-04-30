@@ -12,7 +12,7 @@ provider "aws" {
   # default tags per https://registry.terraform.io/providers/hashicorp/aws/latest/docs#default_tags-configuration-block
   default_tags {
     tags = {
-      env            = var.deploy_env
+      env            = "dev"
       ManagedBy      = "Terraform"
     }
   }

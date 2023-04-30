@@ -1,3 +1,23 @@
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "4.65.0"
+    }
+  }
+}
+
+provider "aws" {
+  region = var.aws_region
+  # default tags per https://registry.terraform.io/providers/hashicorp/aws/latest/docs#default_tags-configuration-block
+  default_tags {
+    tags = {
+      env            = "dev"
+      ManagedBy      = "Terraform"
+    }
+  }
+}
+
 //using archive_file data source to zip the lambda code:
 data "archive_file" "lambda_code" {
   type        = "zip"
