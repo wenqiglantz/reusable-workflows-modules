@@ -9,7 +9,7 @@ terraform {
       version = "3.4.3"
     }
     archive = {
-      source = "hashicorp/archive"
+      source  = "hashicorp/archive"
       version = "2.3.0"
     }
   }
@@ -20,8 +20,8 @@ provider "aws" {
   # default tags per https://registry.terraform.io/providers/hashicorp/aws/latest/docs#default_tags-configuration-block
   default_tags {
     tags = {
-      env            = var.environment
-      ManagedBy      = "Terraform"
+      env       = var.environment
+      ManagedBy = "Terraform"
     }
   }
 }
@@ -69,6 +69,8 @@ resource "aws_lambda_function" "lambda_function" {
   ephemeral_storage {
     size = var.lambda_function.ephemeral_storage
   }
+  snap_start = true
+  publish    = true
 
   filename = data.archive_file.lambda_zip.output_path
   role     = aws_iam_role.lambda.arn
@@ -85,7 +87,6 @@ resource "aws_lambda_function" "lambda_function" {
 }
 
 resource "aws_cloudwatch_log_group" "lambda_log_group" {
-  for_each          = aws_lambda_function.lambda_function
-  name              = "/aws/lambda/${each.value.function_name}"
+  name              = "/aws/lambda/${aws_lambda_function.lambda_function.function_name}"
   retention_in_days = var.lambda_log_retention_in_days
 }
