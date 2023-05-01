@@ -10,10 +10,10 @@ variable "environment" {
   default     = "dev"
 }
 
-variable "open_api_spec" {
-  type        = any
-  description = "OpenAPI Spec"
-}
+#variable "open_api_spec" {
+#  type        = any
+#  description = "OpenAPI Spec"
+#}
 
 variable "api_gw_log_group_retention_in_days" {
   description = "Specifies the number of days you want to retain log events in the specified log group. Possible values are: 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, etc."
