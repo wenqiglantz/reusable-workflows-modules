@@ -36,9 +36,9 @@ resource "aws_lambda_function" "lambda_function" {
   runtime       = var.lambda_function.runtime
   handler       = var.lambda_function.handler
   memory_size   = var.lambda_function.memory_size
-  ephemeral_storage {
-    size = var.lambda_function.ephemeral_storage
-  }
+  timeout       = var.lambda_function.timeout
+  architectures = [var.lambda_function.architecture]
+
   publish = true
   snap_start {
     apply_on = "PublishedVersions"
@@ -49,6 +49,9 @@ resource "aws_lambda_function" "lambda_function" {
 
   tracing_config {
     mode = "PassThrough"
+  }
+  ephemeral_storage {
+    size = var.lambda_function.ephemeral_storage
   }
 
   environment {

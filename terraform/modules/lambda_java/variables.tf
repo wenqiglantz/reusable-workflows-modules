@@ -1,15 +1,3 @@
-#variable "aws_region" {
-#  description = "AWS region for all resources."
-#  type        = string
-#  default     = ""
-#}
-#
-#variable "environment" {
-#  description = "Deployment environment"
-#  type        = string
-#  default     = "dev"
-#}
-
 variable "resource_name_prefix" {
   type        = string
   description = "Resource name prefix, used in role name"
@@ -38,6 +26,8 @@ variable "lambda_function" {
     ephemeral_storage      = "512"
     memory_size            = "128"
     function_name_variable = "chat"
+    timeout                = "15"
+    architecture           = "arm64"
   }
 }
 
