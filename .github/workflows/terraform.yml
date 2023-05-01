@@ -58,7 +58,7 @@ jobs:
 #         run: tflint -f compact
 
       - name: Run Checkov action
-        uses: bridgecrewio/checkov-action@d760887e9ca1a14f871195ab650988ac39c90a0a # master
+        uses: bridgecrewio/checkov-action@8ce9f49fa0d2a9c0c7aeccb7c3820ba7594d5afa # master
         with:
           directory: ${{ inputs.working-directory }}
           quiet: true # optional: display only failed checks
