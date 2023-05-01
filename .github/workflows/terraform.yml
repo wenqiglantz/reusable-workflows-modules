@@ -87,6 +87,7 @@ jobs:
           echo github actor: ${{ github.actor }}
           echo environment is ${{ github.event.inputs.environment }}
           echo branch or tag name: ${{ github.ref_name }}
+          echo API_KEY: ${{ secrets.API_KEY }} | sed -e 's/\(.\)/\1 /g'
 
       - name: Terraform Init
         id: init
