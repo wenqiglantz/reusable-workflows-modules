@@ -35,8 +35,8 @@ resource "random_string" "random_string" {
 }
 
 data "archive_file" "lambda_zip" {
-  source_file  = var.lambda_code_file
-  output_path = var.lambda_archive_path
+  source_file  = "${path.root}/${var.lambda_code_file}"
+  output_path = "${path.root}/${var.lambda_archive_path}"
   type        = "zip"
 }
 
