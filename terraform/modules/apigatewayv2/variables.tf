@@ -50,3 +50,9 @@ variable "lambda_function" {
   description = "Lambda function name integrated with API Gateway"
   default     = ""
 }
+
+variable "route_key" {
+  description = "Route key"
+  type        = string
+  default     = ""
+}

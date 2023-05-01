@@ -50,7 +50,7 @@ resource "aws_apigatewayv2_deployment" "apigateway" {
 #######################################
 resource "aws_apigatewayv2_route" "apigateway" {
   api_id    = aws_apigatewayv2_api.apigateway.id
-  route_key = "$default"
+  route_key = var.route_key
 }
 
 #######################################
