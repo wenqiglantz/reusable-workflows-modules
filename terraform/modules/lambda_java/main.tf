@@ -37,7 +37,6 @@ resource "aws_lambda_function" "lambda_function" {
   handler       = var.lambda_function.handler
   memory_size   = var.lambda_function.memory_size
   timeout       = var.lambda_function.timeout
-  architectures = [var.lambda_function.architecture]
 
   publish = true
   snap_start {

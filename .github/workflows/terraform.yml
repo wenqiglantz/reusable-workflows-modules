@@ -82,6 +82,12 @@ jobs:
           json: ${{ secrets.SECRET_VALUE }}
           dir: ${{ inputs.working-directory }}
 
+      - name: Print debug info
+        run: |
+          echo github actor: ${{ github.actor }}
+          echo environment is ${{ github.event.inputs.environment }}
+          echo branch or tag name: ${{ github.ref_name }}
+
       - name: Terraform Init
         id: init
         run: |
@@ -94,14 +100,14 @@ jobs:
       - name: Terraform Plan
         id: plan
         run: |
-          export TF_VAR_api_key=${{ secrets.API_KEY }}
+          export "TF_VAR_api_key=${{ secrets.API_KEY }}"
           terraform plan -input=false -var-file=.env/${{ github.event.inputs.environment || 'dev' }}/terraform.tfvars -no-color
       
       - name: Terraform Apply
         if: ${{ github.ref != 'refs/heads/destroy' }}
         id: apply
         run: |
-          export TF_VAR_api_key=${{ secrets.API_KEY }}
+          export "TF_VAR_api_key=${{ secrets.API_KEY }}"
           terraform apply -auto-approve -input=false -var-file=.env/${{ github.event.inputs.environment || 'dev' }}/terraform.tfvars
       
       - name: Terraform destroy
@@ -109,5 +115,5 @@ jobs:
         if: github.ref == 'refs/heads/destroy'
         id: destroy
         run: |
-          export TF_VAR_api_key=${{ secrets.API_KEY }}
+          export "TF_VAR_api_key=${{ secrets.API_KEY }}"
           terraform destroy -auto-approve -input=false -var-file=.env/${{ github.event.inputs.environment || 'dev' }}/terraform.tfvars
