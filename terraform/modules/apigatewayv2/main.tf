@@ -25,7 +25,7 @@ resource "aws_apigatewayv2_api" "apigateway" {
   name          = var.http_api_gateway_name
   description   = var.description
   protocol_type = "HTTP"
-  #body          = var.open_api_spec
+  body          = var.open_api_spec
 }
 
 #######################################
@@ -50,7 +50,7 @@ resource "aws_apigatewayv2_deployment" "apigateway" {
 #######################################
 resource "aws_apigatewayv2_route" "apigateway" {
   api_id    = aws_apigatewayv2_api.apigateway.id
-  route_key = var.route_key
+  route_key = "$default"
 }
 
 #######################################
