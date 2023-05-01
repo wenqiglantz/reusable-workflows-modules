@@ -1,14 +1,14 @@
-variable "aws_region" {
-  description = "AWS region for all resources."
-  type        = string
-  default     = ""
-}
-
-variable "environment" {
-  description = "Deployment environment"
-  type        = string
-  default     = "dev"
-}
+#variable "aws_region" {
+#  description = "AWS region for all resources."
+#  type        = string
+#  default     = ""
+#}
+#
+#variable "environment" {
+#  description = "Deployment environment"
+#  type        = string
+#  default     = "dev"
+#}
 
 variable "resource_name_prefix" {
   type        = string

@@ -1,31 +1,3 @@
-terraform {
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "4.65.0"
-    }
-    random = {
-      source  = "hashicorp/random"
-      version = "3.4.3"
-    }
-    archive = {
-      source  = "hashicorp/archive"
-      version = "2.3.0"
-    }
-  }
-}
-
-provider "aws" {
-  region = var.aws_region
-  # default tags per https://registry.terraform.io/providers/hashicorp/aws/latest/docs#default_tags-configuration-block
-  default_tags {
-    tags = {
-      env       = var.environment
-      ManagedBy = "Terraform"
-    }
-  }
-}
-
 resource "random_string" "random_string" {
   length  = 8
   special = false
@@ -67,10 +39,10 @@ resource "aws_lambda_function" "lambda_function" {
   ephemeral_storage {
     size = var.lambda_function.ephemeral_storage
   }
-  #  publish    = true
-  #  snap_start {
-  #    apply_on = "PublishedVersions"
-  #  }
+  publish = true
+  snap_start {
+    apply_on = "PublishedVersions"
+  }
 
   filename = data.archive_file.lambda_zip.output_path
   role     = aws_iam_role.lambda.arn
