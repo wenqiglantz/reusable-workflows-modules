@@ -46,3 +46,9 @@ variable "lambda_log_retention_in_days" {
   type        = number
   default     = 7
 }
+
+variable "api_key" {
+  description = "API key"
+  type        = string
+  default     = ""
+}

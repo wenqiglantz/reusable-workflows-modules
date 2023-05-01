@@ -35,7 +35,7 @@ resource "random_string" "random_string" {
 }
 
 data "archive_file" "lambda_zip" {
-  source_file  = "${path.root}/${var.lambda_code_file}"
+  source_file = "${path.root}/${var.lambda_code_file}"
   output_path = "${path.root}/${var.lambda_archive_path}"
   type        = "zip"
 }
@@ -67,10 +67,10 @@ resource "aws_lambda_function" "lambda_function" {
   ephemeral_storage {
     size = var.lambda_function.ephemeral_storage
   }
-#  publish    = true
-#  snap_start {
-#    apply_on = "PublishedVersions"
-#  }
+  #  publish    = true
+  #  snap_start {
+  #    apply_on = "PublishedVersions"
+  #  }
 
   filename = data.archive_file.lambda_zip.output_path
   role     = aws_iam_role.lambda.arn
@@ -82,6 +82,7 @@ resource "aws_lambda_function" "lambda_function" {
   environment {
     variables = {
       SPRING_CLOUD_FUNCTION_DEFINITION = var.lambda_function.function_name_variable
+      API_KEY                          = var.api_key
     }
   }
 }
