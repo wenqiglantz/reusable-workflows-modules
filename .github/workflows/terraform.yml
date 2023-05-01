@@ -97,7 +97,7 @@ jobs:
           terraform plan -input=false -var-file=.env/${{ github.event.inputs.environment || 'dev' }}/terraform.tfvars -no-color
       
       - name: Terraform Apply
-        if: github.ref == 'refs/heads/${{ inputs.apply-branch }}' && github.event_name == 'push'
+        if: ${{ github.ref != 'refs/heads/destroy' }}
         id: apply
         run: |
           terraform apply -auto-approve -input=false -var-file=.env/${{ github.event.inputs.environment || 'dev' }}/terraform.tfvars
