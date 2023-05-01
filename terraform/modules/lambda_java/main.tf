@@ -37,20 +37,19 @@ resource "aws_lambda_function" "lambda_function" {
   handler       = var.lambda_function.handler
   memory_size   = var.lambda_function.memory_size
   timeout       = var.lambda_function.timeout
-
-  publish = true
-  snap_start {
-    apply_on = "PublishedVersions"
-  }
-
-  filename = data.archive_file.lambda_zip.output_path
-  role     = aws_iam_role.lambda.arn
+  filename      = data.archive_file.lambda_zip.output_path
+  role          = aws_iam_role.lambda.arn
 
   tracing_config {
     mode = "PassThrough"
   }
   ephemeral_storage {
     size = var.lambda_function.ephemeral_storage
+  }
+
+  publish = true
+  snap_start {
+    apply_on = "PublishedVersions"
   }
 
   environment {
