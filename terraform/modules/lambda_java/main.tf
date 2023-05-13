@@ -27,7 +27,8 @@ resource "aws_iam_role" "lambda" {
   name                = "${var.resource_name_prefix}-role-${random_string.random_string.result}"
   assume_role_policy  = data.aws_iam_policy_document.simple_lambda_assume_role_policy.json
   managed_policy_arns = [
-    "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+    "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+    "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess"
   ]
 }
 
