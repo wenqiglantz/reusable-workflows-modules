@@ -41,7 +41,7 @@ resource "aws_lambda_function" "lambda_function" {
   role          = aws_iam_role.lambda.arn
 
   tracing_config {
-    mode = "PassThrough"
+    mode = "Active"
   }
   ephemeral_storage {
     size = var.lambda_function.ephemeral_storage
