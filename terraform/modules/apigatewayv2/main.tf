@@ -48,10 +48,10 @@ resource "aws_apigatewayv2_deployment" "apigateway" {
 #######################################
 # aws_apigatewayv2_route
 #######################################
-resource "aws_apigatewayv2_route" "apigateway" {
-  api_id    = aws_apigatewayv2_api.apigateway.id
-  route_key = "$default"
-}
+# resource "aws_apigatewayv2_route" "apigateway" {
+#   api_id    = aws_apigatewayv2_api.apigateway.id
+#   route_key = "$default"
+# }
 
 #######################################
 # aws_apigatewayv2_stage
@@ -59,7 +59,7 @@ resource "aws_apigatewayv2_route" "apigateway" {
 resource "aws_apigatewayv2_stage" "apigateway" {
   api_id        = aws_apigatewayv2_api.apigateway.id
   name          = var.api_gateway_stage_name
-  deployment_id = aws_apigatewayv2_deployment.apigateway.id
+  #deployment_id = aws_apigatewayv2_deployment.apigateway.id
 
   stage_variables = var.stage_variables
   auto_deploy     = true
