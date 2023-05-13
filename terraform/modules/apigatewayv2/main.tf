@@ -36,8 +36,7 @@ resource "aws_apigatewayv2_deployment" "apigateway" {
   description = "HTTP API Gateway deployment"
 
   depends_on = [
-    aws_apigatewayv2_api.apigateway,
-    aws_apigatewayv2_route.apigateway
+    aws_apigatewayv2_api.apigateway
   ]
 
   lifecycle {
