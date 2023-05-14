@@ -121,9 +121,6 @@ jobs:
           echo "execute rds init script to create tables and populate seed data"
           psql -e -U $POSTGRES_USER -f $RDS_INIT_FILE
 
-          psql -e -U $POSTGRES_USER -c "SELECT current_user;"
-          psql -e -U $POSTGRES_USER -c "SELECT current_schema;"
-
         # Environment variables used by the script to populate the db.
         env:
           # The hostname used to communicate with the PostgreSQL service container
