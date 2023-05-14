@@ -40,7 +40,6 @@ on:
         default: false
         
 jobs:
-
   build:
     name: Build and Test
     runs-on: ubuntu-latest
@@ -59,7 +58,6 @@ jobs:
       postgres:
         # Docker Hub image
         image: postgres
-        # Provide env variables for postgres
         env:
           POSTGRES_USER: ${{ vars.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
