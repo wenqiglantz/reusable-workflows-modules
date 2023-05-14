@@ -101,7 +101,6 @@ jobs:
           cache: maven
 
       - name: Connect to PostgreSQL
-        # Runs a script that creates PostgreSQL schema, tables, populates the table with data
         run: |
           echo "verify that the database is running"
           ps -ef | grep postgres
@@ -109,7 +108,7 @@ jobs:
           echo "notice how the postgres service runs as container that is separated from the workflow runtime environment"
           docker ps
           
-          echo "Confirm that connectivity to the postgres service is working"
+          echo "confirm that connectivity to the postgres service is working"
           psql -e -U $POSTGRES_USER -c "SELECT version();"
           psql -e -U $POSTGRES_USER -c "SELECT current_user;"
           psql -e -U $POSTGRES_USER -c "SELECT current_schema;"
@@ -118,7 +117,7 @@ jobs:
           createdb -U $POSTGRES_USER $POSTGRES_DATABASE
           
           cd $GITHUB_WORKSPACE
-          echo "execute rds init script to create tables and populate seed data"
+          echo "execute rds init script to create table(s) and populate seed data"
           psql -e -U $POSTGRES_USER -f $RDS_INIT_FILE
 
         # Environment variables used by the script to populate the db.
