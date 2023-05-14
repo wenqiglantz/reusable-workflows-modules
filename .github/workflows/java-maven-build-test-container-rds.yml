@@ -1,0 +1,191 @@
+name: Build and Test workflow for Spring Boot microservices
+
+on:
+  workflow_call:
+    inputs:
+      # pass in environment through manual trigger, if not passed in, default to 'dev'
+      env:
+        required: true
+        type: string
+        default: 'dev'
+      # working-directory is added to accommodate monorepo.  For multi repo, defaults to '.', current directory
+      working-directory:
+        required: false
+        type: string
+        default: '.'
+      # pass in java version to allow different app requiring different java versions to reuse the same workflow, default to java 17
+      java-version:
+        required: false
+        type: string
+        default: '17'
+      # allowing calling workflows to pass in maven parameter(s) such as '-Dmaven.test.skip' for certain apps, default to blank, not to skip test
+      maven-params:
+        required: false
+        type: string
+        default: ''
+      # flag to indicate whether to install private lib from github packages
+      install-private-lib:
+        required: false
+        type: boolean
+        default: false
+      # rds init file to create the tables and populate data in service container
+      rds-init-file:
+        required: false
+        type: string
+        default: './.github/scripts/rds_init.sql'
+      # flag to indicate whether to run TruffleHog scan
+      trufflehog-scan-flag:
+        required: false
+        type: boolean
+        default: false
+        
+jobs:
+
+  build:
+    name: Build and Test
+    runs-on: ubuntu-latest
+
+    # accommodating monorepo, this sets the working directory at the job level, for multi repo, defaults to "."
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+
+    # important to specify environment here, defaults to 'dev', so github ations knows where to retrieve the secrets
+    environment: ${{ inputs.env || 'dev' }}
+
+    # Service containers to run with `build`
+    services:
+      # Label used to access the service container
+      postgres:
+        # Docker Hub image
+        image: postgres
+        # Provide env variables for postgres
+        env:
+          POSTGRES_USER: ${{ vars.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DATABASE: ${{ vars.POSTGRES_DATABASE }}
+          POSTGRES_SCHEMA: ${{ vars.POSTGRES_SCHEMA }}
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          # Maps tcp port 5432 on service container to the host
+          - 5432:5432
+          
+    # only run this job for auto trigger by PR merge, if manual trigger for other environments than dev,
+    # no need to run this job as the image will be pulled and promoted to envs higher than dev
+    # also dependabot PRs do not need to run this flow as GitHub prohibits dependabot PRs to access workflows
+    # dealing with secrets due to security reason.
+    if: (inputs.env == null || inputs.env == 'dev') && github.actor != 'dependabot[bot]'
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@ebacdc22ef6c2cfb85ee5ded8f2e640f4c776dd5
+        with:
+          egress-policy: audit # TODO: change to 'egress-policy: block' after couple of runs
+
+      - name: Checkout Code
+        uses: actions/checkout@d0651293c4a5a52e711f25b41b05b2212f385d28
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838
+        with:
+          role-to-assume: ${{ secrets.ROLE_TO_ASSUME }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Setup jdk
+        uses: actions/setup-java@de1bb2b0c5634f0fc4438d7aa9944e68f9bf86cc
+        with:
+          java-version: ${{ inputs.java-version }}
+          distribution: 'adopt'
+          cache: maven
+
+      - name: Connect to PostgreSQL
+        # Runs a script that creates PostgreSQL schema, tables, populates the table with data
+        run: |
+          echo "verify that the database is running"
+          ps -ef | grep postgres
+          
+          echo "notice how the postgres service runs as container that is separated from the workflow runtime environment"
+          docker ps
+          
+          echo "Confirm that connectivity to the postgres service is working"
+          psql -e -U $POSTGRES_USER -c "SELECT version();"
+          psql -e -U $POSTGRES_USER -c "SELECT current_user;"
+          psql -e -U $POSTGRES_USER -c "SELECT current_schema;"
+          
+          echo "creating database"
+          createdb -U $POSTGRES_USER $POSTGRES_DATABASE
+          
+          cd $GITHUB_WORKSPACE
+          echo "execute rds init script to create tables and populate seed data"
+          psql -e -U $POSTGRES_USER -f $RDS_INIT_FILE
+
+          psql -e -U $POSTGRES_USER -c "SELECT current_user;"
+          psql -e -U $POSTGRES_USER -c "SELECT current_schema;"
+
+        # Environment variables used by the script to populate the db.
+        env:
+          # The hostname used to communicate with the PostgreSQL service container
+          PGHOST: localhost
+          PGPORT: 5432
+          POSTGRES_USER: ${{ vars.POSTGRES_USER }}
+          PGPASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DATABASE: ${{ vars.POSTGRES_DATABASE }}
+          POSTGRES_SCHEMA: ${{ vars.POSTGRES_SCHEMA }}
+          RDS_INIT_FILE: ${{ inputs.rds-init-file }}
+          
+      - name: Set project version as environment variable and build with maven
+        env:
+          INSTALL_PRIVATE_LIB: ${{ inputs.install-private-lib }}
+          PAT: ${{ secrets.NPM_TOKEN }}
+        run: |          
+          if [[ "$INSTALL_PRIVATE_LIB" == true ]]; then
+            echo "PROJECT_VERSION=$(mvn -s $GITHUB_WORKSPACE/settings.xml help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
+            mvn -s $GITHUB_WORKSPACE/settings.xml clean install ${{ inputs.maven-params }} -B --file pom.xml            
+          else
+            echo "PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
+            mvn clean install ${{ inputs.maven-params }} -B --file pom.xml
+          fi
+          
+      - name: Print debug info
+        run: |
+          echo environment is ${{ inputs.env }}
+          echo working_directory is ${{ inputs.working-directory }}
+          echo project version is ${{ env.PROJECT_VERSION }}
+          echo java-version is ${{ inputs.java-version }}
+
+      - name: Build, tag, and push image to AWS ECR
+        id: build-image
+        env:
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
+          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
+          IMAGE_TAG: ${{ env.PROJECT_VERSION }}
+        run: |
+          # Build a docker container and push it to ECR so that it can be deployed to ECS.
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          aws ecr get-login-password --region $AWS_REGION | docker login -u AWS --password-stdin $ECR_REGISTRY
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+
+      - name: TruffleHog Secrets Scan
+        if: inputs.trufflehog-scan-flag
+        uses: trufflesecurity/trufflehog@2b1c42ceb17595fd68e183e881d9b70d84e9d3c1
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --debug --only-verified
+
+      - name: Scan ECR image with Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@9ab158e8597f3b310480b9a69402b419bc03dbd5
+        with:
+          image-ref: ${{ steps.build-image.outputs.image }}
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
