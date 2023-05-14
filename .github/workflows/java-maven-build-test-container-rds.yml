@@ -1,4 +1,4 @@
-name: Build and Test workflow for Spring Boot microservices
+name: Build and Test workflow for applications accessing RDS in the pipeline
 
 on:
   workflow_call:
