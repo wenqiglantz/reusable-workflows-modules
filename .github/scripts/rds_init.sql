@@ -1,3 +1,0 @@
-CREATE SCHEMA IF NOT EXISTS customer_service AUTHORIZATION customer_service;
-GRANT ALL ON SCHEMA customer_service TO customer_service;
-ALTER DEFAULT PRIVILEGES IN SCHEMA customer_service GRANT INSERT, SELECT, UPDATE, DELETE, TRUNCATE, REFERENCES ON TABLES TO customer_service;
