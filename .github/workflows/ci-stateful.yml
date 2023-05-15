@@ -48,7 +48,7 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Setup jdk
-        uses: actions/setup-java@19eeec562b37d29a1ad055b7de9c280bd0906d8d
+        uses: actions/setup-java@5ffc13f4174014e2d4d4572b3d74c3fa61aeb2c2
         with:
           java-version: 17
           distribution: 'adopt'
