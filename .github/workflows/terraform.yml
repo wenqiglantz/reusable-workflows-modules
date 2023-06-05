@@ -31,6 +31,10 @@ jobs:
     # default environment to "dev" if it is not passed in through workflow_dispatch manual trigger
     environment: ${{ github.event.inputs.environment || 'dev' }}
 
+    env:
+      DEPLOY_REPO: ${{ github.event.repository.name }}
+      DEPLOY_ENV: ${{ github.event.inputs.environment || 'dev' }}
+      
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@128a63446a954579617e875aaab7d2978154e969
@@ -101,6 +105,9 @@ jobs:
         id: plan
         run: |
           export "TF_VAR_api_key=${{ secrets.API_KEY }}"
+          export TF_VAR_deploy_repo=${DEPLOY_REPO,,}
+          export TF_VAR_deploy_env=${DEPLOY_ENV,,}
+          export TF_VAR_pipeline_token=${{ secrets.PIPELINE_TOKEN }}
           terraform plan -input=false -var-file=.env/${{ github.event.inputs.environment || 'dev' }}/terraform.tfvars -no-color
       
       - name: Terraform Apply
@@ -108,6 +115,9 @@ jobs:
         id: apply
         run: |
           export "TF_VAR_api_key=${{ secrets.API_KEY }}"
+          export TF_VAR_deploy_repo=${DEPLOY_REPO,,}
+          export TF_VAR_deploy_env=${DEPLOY_ENV,,}
+          export TF_VAR_pipeline_token=${{ secrets.PIPELINE_TOKEN }}
           terraform apply -auto-approve -input=false -var-file=.env/${{ github.event.inputs.environment || 'dev' }}/terraform.tfvars
       
       - name: Terraform destroy
@@ -116,4 +126,7 @@ jobs:
         id: destroy
         run: |
           export "TF_VAR_api_key=${{ secrets.API_KEY }}"
+          export TF_VAR_deploy_repo=${DEPLOY_REPO,,}
+          export TF_VAR_deploy_env=${DEPLOY_ENV,,}
+          export TF_VAR_pipeline_token=${{ secrets.PIPELINE_TOKEN }}
           terraform destroy -auto-approve -input=false -var-file=.env/${{ github.event.inputs.environment || 'dev' }}/terraform.tfvars
