@@ -167,7 +167,7 @@ jobs:
 
       - name: TruffleHog Secrets Scan
         if: inputs.trufflehog-scan-flag
-        uses: trufflesecurity/trufflehog@2b1c42ceb17595fd68e183e881d9b70d84e9d3c1
+        uses: trufflesecurity/trufflehog@00920984e3435057f09cee5468850f7546dfa637
         with:
           path: ./
           base: ${{ github.event.repository.default_branch }}
