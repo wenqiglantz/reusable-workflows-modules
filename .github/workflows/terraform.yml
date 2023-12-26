@@ -34,6 +34,7 @@ jobs:
     env:
       DEPLOY_REPO: ${{ github.event.repository.name }}
       DEPLOY_ENV: ${{ github.event.inputs.environment || 'dev' }}
+      REPO_OWNER: ${{ github.repository_owner }}
       
     steps:
       - name: Harden Runner
@@ -107,6 +108,7 @@ jobs:
           export "TF_VAR_api_key=${{ secrets.API_KEY }}"
           export TF_VAR_deploy_repo=${DEPLOY_REPO,,}
           export TF_VAR_deploy_env=${DEPLOY_ENV,,}
+          export TF_VAR_repo_owner=${REPO_OWNER,,}
           export TF_VAR_pipeline_token=${{ secrets.PIPELINE_TOKEN }}
           terraform plan -input=false -var-file=.env/${{ github.event.inputs.environment || 'dev' }}/terraform.tfvars -no-color
       
@@ -117,6 +119,7 @@ jobs:
           export "TF_VAR_api_key=${{ secrets.API_KEY }}"
           export TF_VAR_deploy_repo=${DEPLOY_REPO,,}
           export TF_VAR_deploy_env=${DEPLOY_ENV,,}
+          export TF_VAR_repo_owner=${REPO_OWNER,,}
           export TF_VAR_pipeline_token=${{ secrets.PIPELINE_TOKEN }}
           terraform apply -auto-approve -input=false -var-file=.env/${{ github.event.inputs.environment || 'dev' }}/terraform.tfvars
       
@@ -128,5 +131,6 @@ jobs:
           export "TF_VAR_api_key=${{ secrets.API_KEY }}"
           export TF_VAR_deploy_repo=${DEPLOY_REPO,,}
           export TF_VAR_deploy_env=${DEPLOY_ENV,,}
+          export TF_VAR_repo_owner=${REPO_OWNER,,}
           export TF_VAR_pipeline_token=${{ secrets.PIPELINE_TOKEN }}
           terraform destroy -auto-approve -input=false -var-file=.env/${{ github.event.inputs.environment || 'dev' }}/terraform.tfvars
