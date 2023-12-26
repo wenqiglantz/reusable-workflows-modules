@@ -1,4 +1,4 @@
-bucket         = "terraform-remote-backend-demo-dev"
+bucket         = "terraform-remote-state-rag-demo-dev"
 key            = "ecr-rag/state.tfstate"
 region         = "us-east-1"
 encrypt        = "true"
