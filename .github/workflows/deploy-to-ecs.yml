@@ -1,0 +1,105 @@
+name: Deploy image tag to ECS Fargate 
+
+on:
+  workflow_call:
+    inputs:
+      # pass in environment through manual trigger, if not passed in, default to 'dev'
+      env:
+        required: true
+        type: string
+        default: 'dev'
+      # working-directory is added to accommodate monorepo.  For multi repo, defaults to '.', current directory
+      working-directory:
+        required: false
+        type: string
+        default: '.'
+      # image tag
+      image-tag:
+        required: true
+        type: string
+
+jobs:
+
+  deploy:
+    name: Deploy to AWS ECS Fargate
+    runs-on: ubuntu-latest
+
+    # accommodating monorepo, this sets the working directory at the job level, for multi repo, defaults to "."
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+
+    # important to specify the environment here so workflow knows where to deploy your artifact to.
+    # default environment to "dev" if it is not passed in through workflow_dispatch manual trigger
+    environment: ${{ inputs.env || 'dev' }}
+
+    # only execute if PR is merged or manual trigger
+    if: github.event.pull_request.merged || inputs.env != null
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@1b05615854632b887b69ae1be8cbefe72d3ae423
+        with:
+          disable-sudo: true
+          egress-policy: audit
+
+      - name: Checkout Code
+        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355
+        with:
+          role-to-assume: ${{ vars.ROLE_TO_ASSUME }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Print debug info
+        run: |
+          echo github actor: ${{ github.actor }}
+          echo github actor id: ${{ github.actor_id }}
+          echo branch or tag: ${{ github.ref_type }}
+          echo branch or tag name: ${{ github.ref_name }}
+          echo git_hash: $(git rev-parse --short "$GITHUB_SHA")
+          echo git_branch: ${GITHUB_REF#refs/heads/}
+          echo environment: ${{ inputs.env }}
+          echo working_directory: ${{ inputs.working-directory }}
+          echo github.event.pull_request.merged: ${{ github.event.pull_request.merged }}
+          echo ECR_REPOSITORY_NAME: ${{ vars.ECR_REPOSITORY_NAME }} 
+          echo ECS_CLUSTER: ${{ vars.ECS_CLUSTER }} 
+          echo ECS_SERVICE: ${{ vars.ECS_SERVICE }} 
+          echo ECS_TASK_DEFINITION: ${{ vars.ECS_TASK_DEFINITION }} 
+          echo CONTAINER_NAME: ${{ vars.CONTAINER_NAME }} 
+          echo image tag: ${{ inputs.image-tag }} 
+
+      - name: Download task definition
+        run: |
+          aws ecs describe-task-definition --task-definition ${{ vars.ECS_TASK_DEFINITION }} --query taskDefinition | jq -r 'del(
+                  .taskDefinitionArn,
+                  .requiresAttributes,
+                  .compatibilities,
+                  .revision,
+                  .status,
+                  .registeredAt,
+                  .registeredBy
+                )' > task-definition.json
+
+      - name: Fill in the new image ID and pass in the environment variable in the downloaded task def
+        id: task-def-download
+        uses: aws-actions/amazon-ecs-render-task-definition@61b0c00c3743b70987a73a1faf577f0d167d1574
+        with:
+          # important to specify working directory here to accommodate monorepo
+          task-definition: ${{ inputs.working-directory }}/task-definition.json
+          container-name: ${{ vars.CONTAINER_NAME }}
+          image: ${{ vars.ECR_REGISTRY }}/${{ vars.ECR_REPOSITORY_NAME }}:${{ inputs.image-tag }}
+          # this ENVIRONMENT is passed into the active spring profile in start-service.sh in the startup command,
+          # so it knows which application yml to retrieve based on the active spring profile
+          environment-variables: |
+            ENVIRONMENT=${{ inputs.env || 'dev' }}
+
+      - name: Deploy Amazon ECS task definition for downloaded task def
+        uses: aws-actions/amazon-ecs-deploy-task-definition@df9643053eda01f169e64a0e60233aacca83799a
+        with:
+          task-definition: ${{ steps.task-def-download.outputs.task-definition }}
+          service: ${{ vars.ECS_SERVICE }}
+          cluster: ${{ vars.ECS_CLUSTER }}
+          wait-for-service-stability: true
+

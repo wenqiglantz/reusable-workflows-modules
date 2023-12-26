@@ -1,0 +1,111 @@
+name: Python app build image workflow
+
+on:
+  workflow_call:
+    inputs:
+      # pass in environment through manual trigger, if not passed in, default to 'dev'
+      env:
+        required: true
+        type: string
+        default: 'dev'
+      # working-directory is added to accommodate monorepo.  For multi repo, defaults to '.', current directory
+      working-directory:
+        required: false
+        type: string
+        default: '.'
+    outputs:
+      image-tag:
+        description: "image tag"
+        value: ${{ jobs.build-and-test.outputs.image-tag }}
+      project-version:
+        description: "project release version"
+        value: ${{ jobs.build-and-test.outputs.project-version }}
+
+jobs:
+
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+
+    outputs:
+      image-tag: ${{ steps.set-image-tag.outputs.IMAGE_TAG }}
+      project-version: ${{ steps.get-project-version.outputs.PROJECT_VERSION }} # release version, in the format of 2023.1.0.0
+
+    # accommodating monorepo, this sets the working directory at the job level, for multi repo, defaults to "."
+#    defaults:
+#      run:
+#        working-directory: ${{ inputs.working-directory }}
+
+    # important to specify environment here, defaults to 'dev', so github ations knows where to retrieve the variables
+    environment: ${{ inputs.env || 'dev' }}
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@1b05615854632b887b69ae1be8cbefe72d3ae423
+        with:
+          egress-policy: audit
+
+      - name: Checkout Code
+        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355
+        with:
+          role-to-assume: ${{ vars.ROLE_TO_ASSUME }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Extract version from version.json
+        id: get-project-version
+        run: |
+          version=$(jq -r .version version.json)
+          echo "Extracted version: $version"
+          echo "PROJECT_VERSION=$version" >> $GITHUB_OUTPUT            
+
+      - name: Set image tag output
+        id: set-image-tag
+        env:
+          PAT: ${{ secrets.NPM_TOKEN }}
+          PROJECT_VERSION: ${{ steps.get-project-version.outputs.PROJECT_VERSION }}
+          COMPONENT_NAME: ${{ inputs.component-name }}
+        run: |
+          cd ${{ inputs.working-directory }}
+          echo "IMAGE_TAG=$PROJECT_VERSION-$(git rev-parse --short "$GITHUB_SHA")-$(date +'%Y-%m-%d_%H-%M-%S')" >> $GITHUB_OUTPUT
+
+      - name: Print debug info
+        run: |
+          echo github actor: ${{ github.actor }}
+          echo github actor id: ${{ github.actor_id }}
+          echo branch or tag: ${{ github.ref_type }}
+          echo branch or tag name: ${{ github.ref_name }}
+          echo environment: ${{ inputs.env }}
+          echo working_directory: ${{ inputs.working-directory }}
+          echo ECR_REPOSITORY_NAME: ${{ vars.ECR_REPOSITORY_NAME }}
+          echo GITHUB_WORKSPACE: $GITHUB_WORKSPACE
+          echo image tag: ${{ steps.set-image-tag.outputs.IMAGE_TAG }}
+
+      - name: Build, tag, and push image to AWS ECR
+        id: build-image
+        env:
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          ECR_REGISTRY: ${{ vars.ECR_REGISTRY }}
+          ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY_NAME }}
+          IMAGE_TAG: ${{ steps.set-image-tag.outputs.IMAGE_TAG }}
+          DOCKER_PARAMS: ${{ inputs.docker-params || ''}}
+        run: |
+          # Build a docker container and push it to ECR so that it can be deployed to ECS.
+          aws ecr get-login-password --region $AWS_REGION | docker login -u AWS --password-stdin $ECR_REGISTRY
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Scan ECR image with Trivy vulnerability scanner
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@fbd16365eb88e12433951383f5e99bd901fc618f
+        with:
+          image-ref: ${{ steps.build-image.outputs.image }}
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+          timeout: 5m

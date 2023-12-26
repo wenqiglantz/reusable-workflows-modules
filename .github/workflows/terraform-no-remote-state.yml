@@ -1,0 +1,119 @@
+name: "Terraform for no remote state provisioning, such as provisioning remote state S3 bucket"
+
+on:
+  workflow_call:
+    inputs:
+      # working-directory is added to specify "terraform" directory in project source code as that's where the terraform files live.
+      working-directory:
+        required: false
+        type: string
+        default: './terraform'
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  terraform:
+    name:   Deploy terraform
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+
+    # important to specify the environment here so workflow knows where to deploy your artifact to.
+    # default environment to "dev" if it is not passed in through workflow_dispatch manual trigger
+    environment: ${{ github.event.inputs.environment || 'dev' }}
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@1b05615854632b887b69ae1be8cbefe72d3ae423
+        with:
+          egress-policy: audit
+
+      - name: Checkout Code
+        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355 
+        with:
+          role-to-assume: ${{ vars.TERRAFORM_ROLE_TO_ASSUME }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
+        name: Cache plugin dir
+        with:
+          path: ~/.tflint.d/plugins
+          key: ubuntu-latest-tflint-${{ hashFiles('.tflint.hcl') }}
+
+      - uses: terraform-linters/setup-tflint@a5a1af8c6551fb10c53f1cd4ba62359f1973746f # v3.1.1
+        name: Setup TFLint
+        with:
+          tflint_version: latest
+
+      - name: Init TFLint
+        run: tflint --init
+
+      - name: Run TFLint
+        run: tflint -f compact
+
+      - name: Run Terrascan
+        uses: tenable/terrascan-action@81d74415906b5418095567a13d1ddb7f48c50cd2 # main
+        with:
+          iac_type: 'terraform'
+          iac_version: 'v14'
+          iac_dir: ${{ inputs.working-directory }}
+          policy_type: 'aws'
+          only_warn: false
+          scm_token: ${{ secrets.NPM_TOKEN }}
+          verbose: true
+          sarif_upload: true
+
+      - name: Run Checkov action
+        uses: bridgecrewio/checkov-action@487b93e19b10b7579d9a8c5be7800801a0f23f27 # master
+        with:
+          directory: ${{ inputs.working-directory }}
+          quiet: true # optional: display only failed checks
+          soft_fail: true # optional: do not return an error code if there are failed checks
+          framework: terraform # optional: run only on a specific infrastructure {cloudformation,terraform,kubernetes,all}
+          output_format: sarif # optional: the output format, one of: cli, json, junitxml, github_failed_only, or sarif. Default: sarif
+          output_file_path: reports/results.sarif # folder and name of results file
+          download_external_modules: true # optional: download external terraform modules from public git repositories and terraform registry
+          log_level: DEBUG # optional: set log level. Default WARNING
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@7b3bcd8d76f3cbaec0a3564e53de7c9adf00f0a7
+        with:
+          terraform_wrapper: false #this configuration is needed for us to call terraform output in a GitHub action
+
+      - name: Print debug info
+        run: |
+          echo environment is ${{ github.event.inputs.environment }}
+          echo working_directory is ${{ inputs.working-directory }}
+          echo repository is ${{ github.repository }}
+
+      - name: Terraform Init without remote state
+        run: |
+          # passes a NPM_TOKEN which has access to private repo as client app doesn't pass such credential in when calling tf composite module.
+          # credit: https://github.com/hashicorp/setup-terraform/issues/33
+          git config --global url."https://oauth2:${{ secrets.NPM_TOKEN }}@github.com".insteadOf https://github.com
+          rm -rf .terraform
+          terraform init -upgrade=true -no-color -input=false
+
+      - name: Terraform Plan
+        id: plan
+        run: |
+          terraform plan -input=false -var-file=.env/${{ github.event.inputs.environment || 'dev' }}/terraform.tfvars -no-color
+
+      - name: Terraform Apply
+        id: apply
+        run: |
+          terraform apply -auto-approve -input=false -var-file=.env/${{ github.event.inputs.environment || 'dev' }}/terraform.tfvars
+
+      - name: Terraform destroy
+        # If you want to use this workflow to run terraform destroy, create a feature branch "destroy", trigger this workflow from that branch to destroy.
+        if: always() && github.ref == 'refs/heads/destroy'
+        id: destroy
+        run: | 
+          terraform destroy -auto-approve -input=false -var-file=.env/${{ github.event.inputs.environment || 'dev' }}/terraform.tfvars
