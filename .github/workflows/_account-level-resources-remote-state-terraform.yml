@@ -1,4 +1,4 @@
-name: ".Terraform AWS remote state S3 workflow"
+name: ".Terraform AWS remote state workflow"
 
 on:
   workflow_dispatch:
