@@ -20,5 +20,5 @@ jobs:
     uses: wenqiglantz/reusable-workflows-modules/.github/workflows/terraform-no-remote-state.yml@main
     with:
       # need to specify working-directory as that's where the terraform files live in the source code
-      working-directory: ./terraform/stacks/account-level-resources/remote-state-s3
+      working-directory: ./terraform/stacks/account-level-resources/remote-state
     secrets: inherit
