@@ -263,26 +263,32 @@ resource "aws_ssm_parameter" "entry" {
 }
 
 #######################################
-# GitHub secrets creation, need these secrets for app CI/CD in github actions
-# plaintext_value is allowed per https://github.com/bridgecrewio/checkov/pull/2383/files
+# GitHub env variable creation, need these variables for app CI/CD in github actions
 #######################################
-resource "github_actions_environment_secret" "ecs_task_definition" {
-  repository      = var.deploy_repo
-  environment     = var.deploy_env
-  secret_name     = "ECS_TASK_DEFINITION"
-  plaintext_value = aws_ecs_task_definition.app.family
+resource "github_actions_environment_variable" "ecs_task_definition" {
+  repository    = var.deploy_repo
+  environment   = var.deploy_env
+  variable_name = "ECS_TASK_DEFINITION"
+  value         = aws_ecs_task_definition.app.family
 }
 
-resource "github_actions_environment_secret" "container_name" {
-  repository      = var.deploy_repo
-  environment     = var.deploy_env
-  secret_name     = "CONTAINER_NAME"
-  plaintext_value = aws_ecs_task_definition.app.family
+resource "github_actions_environment_variable" "container_name" {
+  repository    = var.deploy_repo
+  environment   = var.deploy_env
+  variable_name = "CONTAINER_NAME"
+  value         = aws_ecs_task_definition.app.family
 }
 
-resource "github_actions_environment_secret" "ecs_service" {
-  repository      = var.deploy_repo
-  environment     = var.deploy_env
-  secret_name     = "ECS_SERVICE"
-  plaintext_value = aws_ecs_service.app.name
+resource "github_actions_environment_variable" "ecs_service" {
+  repository    = var.deploy_repo
+  environment   = var.deploy_env
+  variable_name = "ECS_SERVICE"
+  value         = aws_ecs_service.app.name
+}
+
+resource "github_actions_environment_variable" "ecr_repository_name" {
+  repository    = var.deploy_repo
+  environment   = var.deploy_env
+  variable_name = "ECR_REPOSITORY_NAME"
+  value         = var.ecr_repository_name
 }

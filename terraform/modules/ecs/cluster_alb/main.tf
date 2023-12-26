@@ -157,11 +157,11 @@ resource "aws_lb_listener_rule" "ag_alb_listener_rule" {
 }
 
 #######################################
-# GitHub secrets creation, need these secrets for app CI/CD in github actions
+# GitHub env variable creation, need this variable for app CI/CD in github actions
 #######################################
-resource "github_actions_environment_secret" "ecs_cluster" {
-  repository      = var.deploy_repo
-  environment     = var.deploy_env
-  secret_name     = "ECS_CLUSTER"
-  plaintext_value = aws_ecs_cluster.ecs_fargate[0].name
+resource "github_actions_environment_variable" "ecs_cluster" {
+  repository    = var.deploy_repo
+  environment   = var.deploy_env
+  variable_name = "ECS_CLUSTER"
+  value         = aws_ecs_cluster.ecs_fargate[0].name
 }
