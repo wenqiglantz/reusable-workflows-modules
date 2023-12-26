@@ -23,12 +23,11 @@ variable "create_cluster" {
 variable "cluster_name" {
   description = "Name of the cluster (up to 255 letters, numbers, hyphens, and underscores)"
   type        = string
-  default     = ""
 }
 
 variable "vpc_id" {
   description = "The VPC id"
-  type = string
+  type        = string
 }
 
 variable "public_subnets" {
@@ -44,17 +43,14 @@ variable "service_port" {
 
 variable "alb_name" {
   default     = "default"
+  type        = string
   description = "The name of the loadbalancer"
 }
 
 variable "target_group_name" {
   default     = "default"
+  type        = string
   description = "The name of the target group"
-}
-
-variable "ecs_service_sg_name" {
-  default     = "default"
-  description = "The name of the ECS service security group"
 }
 
 variable "service_port_target_group" {
@@ -83,18 +79,18 @@ variable "alb_https_certificate_arn" {
 
 variable "deploy_repo" {
   description = "GitHub repo passed in from CI workflow"
-  type    = string
-  default = ""
+  type        = string
+  default     = ""
 }
 
 variable "deploy_env" {
   description = "Deployment environment passed in from CI workflow"
-  type    = string
-  default = "dev"
+  type        = string
+  default     = "dev"
 }
 
 variable "pipeline_token" {
   description = "GitHub token passed in from CI workflow"
-  type    = string
-  default = ""
+  type        = string
+  default     = ""
 }

@@ -17,16 +17,10 @@ variable "github_repo_owner" {
 variable "cluster_name" {
   description = "Name of the cluster (up to 255 letters, numbers, hyphens, and underscores)"
   type        = string
-  default     = ""
 }
 
 variable "vpc_id" {
   description = "The VPC id"
-  type        = string
-}
-
-variable "vpc_cidr_block" {
-  description = "The VPC cidr block"
   type        = string
 }
 
@@ -66,21 +60,19 @@ variable "cpu_architecture" {
 
 variable "alb_target_group_arn" {
   default     = "default"
+  type        = string
   description = "The ARN of the ALB target group"
 }
 
 variable "alb_security_group_id" {
   default     = "default"
+  type        = string
   description = "The ALB security group id"
-}
-
-variable "ecs_service_sg_name" {
-  default     = "default"
-  description = "The name of the ECS service security group"
 }
 
 variable "ecr_repository_name" {
   default     = "default"
+  type        = string
   description = "The ECR repository name"
 }
 
@@ -88,12 +80,6 @@ variable "service_port_target_group" {
   description = "application's service port"
   type        = number
   default     = 8080
-}
-
-variable "use_existing_cloudwatch_log_group" {
-  description = "flag to indicate whether or not to use existing cloudwatch log group"
-  type        = bool
-  default     = true
 }
 
 variable "log_group_retention_in_days" {
@@ -110,18 +96,18 @@ variable "parameter_store_entries" {
 
 variable "deploy_repo" {
   description = "GitHub repo passed in from CI workflow"
-  type    = string
-  default = ""
+  type        = string
+  default     = ""
 }
 
 variable "deploy_env" {
   description = "Deployment environment passed in from CI workflow"
-  type    = string
-  default = "dev"
+  type        = string
+  default     = "dev"
 }
 
 variable "pipeline_token" {
   description = "GitHub token passed in from CI workflow"
-  type    = string
-  default = ""
+  type        = string
+  default     = ""
 }

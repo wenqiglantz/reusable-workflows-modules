@@ -73,7 +73,6 @@ locals {
       }
     }
   ]
-  ecs_service_sg_name = var.ecs_service_sg_name
   cw_log_group        = "/ecs/${local.service_name}"
 }
 
@@ -165,16 +164,16 @@ resource "aws_cloudwatch_log_group" "app" {
 resource "aws_ecs_task_definition" "app" {
   family                   = local.service_name
   network_mode             = "awsvpc"
-  cpu                      = local.container_definition.0.cpu
-  memory                   = local.container_definition.0.memory
+  cpu                      = local.container_definition[0].cpu
+  memory                   = local.container_definition[0].memory
   requires_compatibilities = ["FARGATE"]
   container_definitions    = jsonencode(local.container_definition)
   execution_role_arn       = aws_iam_role.task_execution_role.arn
   task_role_arn            = aws_iam_role.task_role.arn
 
   runtime_platform {
-    operating_system_family = local.container_definition.0.operating_system_family
-    cpu_architecture        = local.container_definition.0.cpu_architecture
+    operating_system_family = local.container_definition[0].operating_system_family
+    cpu_architecture        = local.container_definition[0].cpu_architecture
   }
 }
 
