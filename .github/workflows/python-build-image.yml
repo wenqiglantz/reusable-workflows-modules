@@ -61,6 +61,11 @@ jobs:
           echo "Extracted version: $version"
           echo "PROJECT_VERSION=$version" >> $GITHUB_OUTPUT            
 
+      - name: Create .streamlit folder and add secrets.toml
+        run: |
+          mkdir -p .streamlit
+          echo "openai_key = '${{ secrets.OPENAI_KEY }}'" > .streamlit/secrets.toml
+
       - name: Set image tag output
         id: set-image-tag
         env:
