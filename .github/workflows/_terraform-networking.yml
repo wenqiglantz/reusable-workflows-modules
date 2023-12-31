@@ -1,0 +1,24 @@
+name: ".Terraform AWS VPC/subnets workflow"
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to run the workflow against'
+        type: environment
+        required: true
+
+permissions:  # added using https://github.com/step-security/secure-workflows
+  contents: read
+
+jobs:
+
+  terraform:
+    permissions:
+      id-token: write  # need this for OIDC
+      contents: read   # This is required for actions/checkout
+    uses: wenqiglantz/reusable-workflows-modules/.github/workflows/terraform.yml@main
+    with:
+      # need to specify working-directory as that's where the terraform files live in the source code
+      working-directory: ./terraform/stacks/account-level-resources/networking
+    secrets: inherit
