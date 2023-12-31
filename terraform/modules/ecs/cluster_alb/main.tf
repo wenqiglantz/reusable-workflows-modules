@@ -39,16 +39,16 @@ data "aws_ssm_parameter" "vpc_id" {
   name = "/base/vpcId"
 }
 
-data "aws_ssm_parameter" "public_subnet_a_id" {
+data "aws_ssm_parameter" "public_subnet_0_id" {
+  name = "/base/publicSubnet0"
+}
+
+data "aws_ssm_parameter" "public_subnet_1_id" {
   name = "/base/publicSubnet1"
 }
 
-data "aws_ssm_parameter" "public_subnet_b_id" {
+data "aws_ssm_parameter" "public_subnet_2_id" {
   name = "/base/publicSubnet2"
-}
-
-data "aws_ssm_parameter" "public_subnet_c_id" {
-  name = "/base/publicSubnet3"
 }
 
 #######################################
@@ -118,9 +118,9 @@ resource "aws_lb" "ecs_alb" {
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb_sg[0].id]
   subnets            = [
-    data.aws_ssm_parameter.public_subnet_a_id.value,
-    data.aws_ssm_parameter.public_subnet_b_id.value,
-    data.aws_ssm_parameter.public_subnet_c_id.value
+    data.aws_ssm_parameter.public_subnet_0_id.value,
+    data.aws_ssm_parameter.public_subnet_1_id.value,
+    data.aws_ssm_parameter.public_subnet_2_id.value
   ]
   drop_invalid_header_fields = true
 }

@@ -29,9 +29,9 @@ No modules.
 | [aws_lb_listener_rule.ag_alb_listener_rule](https://registry.terraform.io/providers/hashicorp/aws/5.31.0/docs/resources/lb_listener_rule) | resource |
 | [aws_security_group.alb_sg](https://registry.terraform.io/providers/hashicorp/aws/5.31.0/docs/resources/security_group) | resource |
 | [github_actions_environment_variable.ecs_cluster](https://registry.terraform.io/providers/integrations/github/5.42.0/docs/resources/actions_environment_variable) | resource |
-| [aws_ssm_parameter.public_subnet_a_id](https://registry.terraform.io/providers/hashicorp/aws/5.31.0/docs/data-sources/ssm_parameter) | data source |
-| [aws_ssm_parameter.public_subnet_b_id](https://registry.terraform.io/providers/hashicorp/aws/5.31.0/docs/data-sources/ssm_parameter) | data source |
-| [aws_ssm_parameter.public_subnet_c_id](https://registry.terraform.io/providers/hashicorp/aws/5.31.0/docs/data-sources/ssm_parameter) | data source |
+| [aws_ssm_parameter.public_subnet_0_id](https://registry.terraform.io/providers/hashicorp/aws/5.31.0/docs/data-sources/ssm_parameter) | data source |
+| [aws_ssm_parameter.public_subnet_1_id](https://registry.terraform.io/providers/hashicorp/aws/5.31.0/docs/data-sources/ssm_parameter) | data source |
+| [aws_ssm_parameter.public_subnet_2_id](https://registry.terraform.io/providers/hashicorp/aws/5.31.0/docs/data-sources/ssm_parameter) | data source |
 | [aws_ssm_parameter.vpc_id](https://registry.terraform.io/providers/hashicorp/aws/5.31.0/docs/data-sources/ssm_parameter) | data source |
 
 ## Inputs

@@ -41,9 +41,9 @@ No modules.
 | [aws_iam_policy.task_policy](https://registry.terraform.io/providers/hashicorp/aws/5.31.0/docs/data-sources/iam_policy) | data source |
 | [aws_iam_policy_document.fargate-role-policy](https://registry.terraform.io/providers/hashicorp/aws/5.31.0/docs/data-sources/iam_policy_document) | data source |
 | [aws_region.current](https://registry.terraform.io/providers/hashicorp/aws/5.31.0/docs/data-sources/region) | data source |
-| [aws_ssm_parameter.private_subnet_a_id](https://registry.terraform.io/providers/hashicorp/aws/5.31.0/docs/data-sources/ssm_parameter) | data source |
-| [aws_ssm_parameter.private_subnet_b_id](https://registry.terraform.io/providers/hashicorp/aws/5.31.0/docs/data-sources/ssm_parameter) | data source |
-| [aws_ssm_parameter.private_subnet_c_id](https://registry.terraform.io/providers/hashicorp/aws/5.31.0/docs/data-sources/ssm_parameter) | data source |
+| [aws_ssm_parameter.private_subnet_0_id](https://registry.terraform.io/providers/hashicorp/aws/5.31.0/docs/data-sources/ssm_parameter) | data source |
+| [aws_ssm_parameter.private_subnet_1_id](https://registry.terraform.io/providers/hashicorp/aws/5.31.0/docs/data-sources/ssm_parameter) | data source |
+| [aws_ssm_parameter.private_subnet_2_id](https://registry.terraform.io/providers/hashicorp/aws/5.31.0/docs/data-sources/ssm_parameter) | data source |
 | [aws_ssm_parameter.vpc_id](https://registry.terraform.io/providers/hashicorp/aws/5.31.0/docs/data-sources/ssm_parameter) | data source |
 
 ## Inputs

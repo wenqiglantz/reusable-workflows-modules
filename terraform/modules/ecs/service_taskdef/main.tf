@@ -39,16 +39,16 @@ data "aws_ssm_parameter" "vpc_id" {
   name = "/base/vpcId"
 }
 
-data "aws_ssm_parameter" "private_subnet_a_id" {
+data "aws_ssm_parameter" "private_subnet_0_id" {
+  name = "/base/privateSubnet0"
+}
+
+data "aws_ssm_parameter" "private_subnet_1_id" {
   name = "/base/privateSubnet1"
 }
 
-data "aws_ssm_parameter" "private_subnet_b_id" {
+data "aws_ssm_parameter" "private_subnet_2_id" {
   name = "/base/privateSubnet2"
-}
-
-data "aws_ssm_parameter" "private_subnet_c_id" {
-  name = "/base/privateSubnet3"
 }
 
 
@@ -229,9 +229,9 @@ resource "aws_ecs_service" "app" {
   network_configuration {
     security_groups = [aws_security_group.fargate_task.id]
     subnets         = [
-      data.aws_ssm_parameter.private_subnet_a_id.value,
-      data.aws_ssm_parameter.private_subnet_b_id.value,
-      data.aws_ssm_parameter.private_subnet_c_id.value
+      data.aws_ssm_parameter.private_subnet_0_id.value,
+      data.aws_ssm_parameter.private_subnet_1_id.value,
+      data.aws_ssm_parameter.private_subnet_2_id.value
     ]
     assign_public_ip = false
   }
