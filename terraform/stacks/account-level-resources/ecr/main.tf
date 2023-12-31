@@ -64,15 +64,7 @@ resource "aws_ecr_repository_policy" "my_ecr_repo_policy" {
             "arn:aws:iam::342212914682:role/Terraform_role", #todo
           ]
         },
-        Action = [
-          "ecr:GetDownloadUrlForLayer",
-          "ecr:BatchGetImage",
-          "ecr:BatchCheckLayerAvailability",
-          "ecr:PutImage",
-          "ecr:InitiateLayerUpload",
-          "ecr:UploadLayerPart",
-          "ecr:CompleteLayerUpload"
-        ]
+        Action = "ecr:*"
       }
     ]
   })

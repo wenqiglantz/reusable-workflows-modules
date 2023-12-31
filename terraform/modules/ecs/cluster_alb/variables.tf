@@ -25,16 +25,6 @@ variable "cluster_name" {
   type        = string
 }
 
-variable "vpc_id" {
-  description = "The VPC id"
-  type        = string
-}
-
-variable "public_subnets" {
-  type        = list
-  description = "List of public subnet ids"
-}
-
 variable "service_port" {
   description = "application's service port"
   type        = string

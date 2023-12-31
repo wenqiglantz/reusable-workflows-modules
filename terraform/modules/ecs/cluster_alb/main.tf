@@ -33,6 +33,25 @@ provider "github" {
 }
 
 #######################################
+# VPC/subnets/certificate retrieved from parameter store
+#######################################
+data "aws_ssm_parameter" "vpc_id" {
+  name = "/base/vpcId"
+}
+
+data "aws_ssm_parameter" "public_subnet_a_id" {
+  name = "/base/publicSubnet1"
+}
+
+data "aws_ssm_parameter" "public_subnet_b_id" {
+  name = "/base/publicSubnet2"
+}
+
+data "aws_ssm_parameter" "public_subnet_c_id" {
+  name = "/base/publicSubnet3"
+}
+
+#######################################
 # aws_ecs_cluster
 #######################################
 resource "aws_ecs_cluster" "ecs_fargate" {
@@ -63,7 +82,7 @@ resource "aws_security_group" "alb_sg" {
   count  = var.create_cluster ? 1 : 0
   name   = var.alb_name
   #description = "security group for ALB"
-  vpc_id = var.vpc_id
+  vpc_id = data.aws_ssm_parameter.vpc_id.value
 
   ingress {
     description      = "ingress for tcp port"
@@ -93,12 +112,16 @@ resource "aws_security_group" "alb_sg" {
 # aws_alb
 #######################################
 resource "aws_lb" "ecs_alb" {
-  count                      = var.create_cluster ? 1 : 0
-  name                       = var.alb_name
-  internal                   = false
-  load_balancer_type         = "application"
-  security_groups            = [aws_security_group.alb_sg[0].id]
-  subnets                    = var.public_subnets
+  count              = var.create_cluster ? 1 : 0
+  name               = var.alb_name
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.alb_sg[0].id]
+  subnets            = [
+    data.aws_ssm_parameter.public_subnet_a_id.value,
+    data.aws_ssm_parameter.public_subnet_b_id.value,
+    data.aws_ssm_parameter.public_subnet_c_id.value
+  ]
   drop_invalid_header_fields = true
 }
 
@@ -107,7 +130,7 @@ resource "aws_alb_target_group" "ecs_alb_target_group" {
   name                          = var.target_group_name
   port                          = var.service_port_target_group
   protocol                      = "HTTP"
-  vpc_id                        = var.vpc_id
+  vpc_id                        = data.aws_ssm_parameter.vpc_id.value
   target_type                   = "ip"
   load_balancing_algorithm_type = "least_outstanding_requests"
 

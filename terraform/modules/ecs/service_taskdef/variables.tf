@@ -19,16 +19,6 @@ variable "cluster_name" {
   type        = string
 }
 
-variable "vpc_id" {
-  description = "The VPC id"
-  type        = string
-}
-
-variable "private_subnets" {
-  type        = list
-  description = "List of private subnet ids"
-}
-
 variable "cpu" {
   description = "The CPU size"
   type        = number

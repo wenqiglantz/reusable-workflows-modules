@@ -32,6 +32,26 @@ provider "github" {
   owner = var.github_repo_owner
 }
 
+#######################################
+# VPC/subnets/certificate retrieved from parameter store
+#######################################
+data "aws_ssm_parameter" "vpc_id" {
+  name = "/base/vpcId"
+}
+
+data "aws_ssm_parameter" "private_subnet_a_id" {
+  name = "/base/privateSubnet1"
+}
+
+data "aws_ssm_parameter" "private_subnet_b_id" {
+  name = "/base/privateSubnet2"
+}
+
+data "aws_ssm_parameter" "private_subnet_c_id" {
+  name = "/base/privateSubnet3"
+}
+
+
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
@@ -73,7 +93,7 @@ locals {
       }
     }
   ]
-  cw_log_group        = "/ecs/${local.service_name}"
+  cw_log_group = "/ecs/${local.service_name}"
 }
 
 #######################################
@@ -124,19 +144,19 @@ resource "aws_iam_role_policy_attachment" "task_role_attachment" {
 # aws_security_group
 #######################################
 resource "aws_security_group" "fargate_task" {
-  name        = "${local.service_name}-fargate-task"
+  name   = "${local.service_name}-fargate-task"
   #description = "security group for fargate task"
-  vpc_id      = var.vpc_id
+  vpc_id = data.aws_ssm_parameter.vpc_id.value
 
   ingress {
-    description = "ingress for ALB security group"
+    description     = "ingress for ALB security group"
     from_port       = 0
     to_port         = 0
     protocol        = "-1"
     security_groups = [var.alb_security_group_id]
   }
   egress {
-    description = "egress rule"
+    description      = "egress rule"
     from_port        = 0
     to_port          = 0
     protocol         = "-1"
@@ -207,10 +227,15 @@ resource "aws_ecs_service" "app" {
   }
 
   network_configuration {
-    security_groups  = [aws_security_group.fargate_task.id]
-    subnets          = var.private_subnets
+    security_groups = [aws_security_group.fargate_task.id]
+    subnets         = [
+      data.aws_ssm_parameter.private_subnet_a_id.value,
+      data.aws_ssm_parameter.private_subnet_b_id.value,
+      data.aws_ssm_parameter.private_subnet_c_id.value
+    ]
     assign_public_ip = false
   }
+  vpc_id = data.aws_ssm_parameter.vpc_id.value
 
   load_balancer {
     target_group_arn = var.alb_target_group_arn
@@ -249,7 +274,7 @@ resource "aws_service_discovery_service" "app_service" {
 resource "aws_service_discovery_private_dns_namespace" "app" {
   name        = "${local.service_name}.agcloud.bz"
   description = "${local.service_name}.agcloud.bz zone"
-  vpc         = var.vpc_id
+  vpc         = data.aws_ssm_parameter.vpc_id.value
 }
 
 #######################################

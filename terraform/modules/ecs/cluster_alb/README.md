@@ -28,7 +28,11 @@ No modules.
 | [aws_lb.ecs_alb](https://registry.terraform.io/providers/hashicorp/aws/5.31.0/docs/resources/lb) | resource |
 | [aws_lb_listener_rule.ag_alb_listener_rule](https://registry.terraform.io/providers/hashicorp/aws/5.31.0/docs/resources/lb_listener_rule) | resource |
 | [aws_security_group.alb_sg](https://registry.terraform.io/providers/hashicorp/aws/5.31.0/docs/resources/security_group) | resource |
-| [github_actions_environment_secret.ecs_cluster](https://registry.terraform.io/providers/integrations/github/5.42.0/docs/resources/actions_environment_secret) | resource |
+| [github_actions_environment_variable.ecs_cluster](https://registry.terraform.io/providers/integrations/github/5.42.0/docs/resources/actions_environment_variable) | resource |
+| [aws_ssm_parameter.public_subnet_a_id](https://registry.terraform.io/providers/hashicorp/aws/5.31.0/docs/data-sources/ssm_parameter) | data source |
+| [aws_ssm_parameter.public_subnet_b_id](https://registry.terraform.io/providers/hashicorp/aws/5.31.0/docs/data-sources/ssm_parameter) | data source |
+| [aws_ssm_parameter.public_subnet_c_id](https://registry.terraform.io/providers/hashicorp/aws/5.31.0/docs/data-sources/ssm_parameter) | data source |
+| [aws_ssm_parameter.vpc_id](https://registry.terraform.io/providers/hashicorp/aws/5.31.0/docs/data-sources/ssm_parameter) | data source |
 
 ## Inputs
 
@@ -37,21 +41,18 @@ No modules.
 | <a name="input_alb_https_certificate_arn"></a> [alb\_https\_certificate\_arn](#input\_alb\_https\_certificate\_arn) | ALB HTTPS certification arn | `string` | `""` | no |
 | <a name="input_alb_name"></a> [alb\_name](#input\_alb\_name) | The name of the loadbalancer | `string` | `"default"` | no |
 | <a name="input_aws_region"></a> [aws\_region](#input\_aws\_region) | AWS region | `string` | `"us-east-1"` | no |
-| <a name="input_cluster_name"></a> [cluster\_name](#input\_cluster\_name) | Name of the cluster (up to 255 letters, numbers, hyphens, and underscores) | `string` | `""` | no |
+| <a name="input_cluster_name"></a> [cluster\_name](#input\_cluster\_name) | Name of the cluster (up to 255 letters, numbers, hyphens, and underscores) | `string` | n/a | yes |
 | <a name="input_context_path"></a> [context\_path](#input\_context\_path) | application's context path, used for ALB listener rule configuration | `string` | `""` | no |
 | <a name="input_create_cluster"></a> [create\_cluster](#input\_create\_cluster) | flag to create new cluster or use existing one | `bool` | `true` | no |
 | <a name="input_deploy_env"></a> [deploy\_env](#input\_deploy\_env) | Deployment environment passed in from CI workflow | `string` | `"dev"` | no |
 | <a name="input_deploy_repo"></a> [deploy\_repo](#input\_deploy\_repo) | GitHub repo passed in from CI workflow | `string` | `""` | no |
-| <a name="input_ecs_service_sg_name"></a> [ecs\_service\_sg\_name](#input\_ecs\_service\_sg\_name) | The name of the ECS service security group | `string` | `"default"` | no |
 | <a name="input_github_repo_owner"></a> [github\_repo\_owner](#input\_github\_repo\_owner) | GitHub repo owner | `string` | n/a | yes |
 | <a name="input_healthcheck_path"></a> [healthcheck\_path](#input\_healthcheck\_path) | application's health check path | `string` | `""` | no |
 | <a name="input_pipeline_token"></a> [pipeline\_token](#input\_pipeline\_token) | GitHub token passed in from CI workflow | `string` | `""` | no |
-| <a name="input_public_subnets"></a> [public\_subnets](#input\_public\_subnets) | List of public subnet ids | `list` | n/a | yes |
 | <a name="input_requester_name"></a> [requester\_name](#input\_requester\_name) | requester name tag | `string` | n/a | yes |
 | <a name="input_service_port"></a> [service\_port](#input\_service\_port) | application's service port | `string` | `"443"` | no |
 | <a name="input_service_port_target_group"></a> [service\_port\_target\_group](#input\_service\_port\_target\_group) | application's service port | `string` | `"8080"` | no |
 | <a name="input_target_group_name"></a> [target\_group\_name](#input\_target\_group\_name) | The name of the target group | `string` | `"default"` | no |
-| <a name="input_vpc_id"></a> [vpc\_id](#input\_vpc\_id) | The VPC id | `string` | n/a | yes |
 
 ## Outputs
 
