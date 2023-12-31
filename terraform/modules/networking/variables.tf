@@ -26,11 +26,6 @@ variable "vpc_cidr" {
   type        = string
 }
 
-variable "availability_zones" {
-  description = "The az that the resources will be launched"
-  type        = list
-}
-
 variable "public_subnets_cidr" {
   description = "The CIDR block for the public subnet"
   type        = list

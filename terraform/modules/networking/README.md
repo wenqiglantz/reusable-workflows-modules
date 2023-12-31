@@ -40,7 +40,6 @@ No modules.
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| <a name="input_availability_zones"></a> [availability\_zones](#input\_availability\_zones) | The az that the resources will be launched | `list` | n/a | yes |
 | <a name="input_aws_region"></a> [aws\_region](#input\_aws\_region) | AWS region | `string` | `"us-east-1"` | no |
 | <a name="input_create_vpc"></a> [create\_vpc](#input\_create\_vpc) | flag to create new VPC or use existing one | `bool` | `true` | no |
 | <a name="input_deploy_env"></a> [deploy\_env](#input\_deploy\_env) | Deployment environment passed in from CI workflow | `string` | `"dev"` | no |
