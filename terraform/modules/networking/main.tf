@@ -72,7 +72,7 @@ resource "aws_internet_gateway" "ig" {
 
 resource "aws_eip" "nat_eip" {
   count      = var.create_vpc ? 1 : 0
-  vpc        = true
+  domain     = "vpc"
   depends_on = [aws_internet_gateway.ig]
 }
 
