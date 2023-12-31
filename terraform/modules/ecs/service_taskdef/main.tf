@@ -235,7 +235,6 @@ resource "aws_ecs_service" "app" {
     ]
     assign_public_ip = false
   }
-  vpc_id = data.aws_ssm_parameter.vpc_id.value
 
   load_balancer {
     target_group_arn = var.alb_target_group_arn
