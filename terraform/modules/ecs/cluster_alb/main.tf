@@ -125,25 +125,25 @@ resource "aws_lb" "ecs_alb" {
   drop_invalid_header_fields = true
 }
 
-resource "aws_alb_target_group" "ecs_alb_target_group" {
-  count                         = var.create_cluster ? 1 : 0
-  name                          = var.target_group_name
-  port                          = var.service_port_target_group
-  protocol                      = "HTTP"
-  vpc_id                        = data.aws_ssm_parameter.vpc_id.value
-  target_type                   = "ip"
-  load_balancing_algorithm_type = "least_outstanding_requests"
-
-  health_check {
-    healthy_threshold   = "2"
-    unhealthy_threshold = "5"
-    interval            = "30"
-    protocol            = "HTTP"
-    matcher             = "200-399"
-    path                = var.healthcheck_path
-    timeout             = "10"
-  }
-}
+#resource "aws_alb_target_group" "ecs_alb_target_group" {
+#  count                         = var.create_cluster ? 1 : 0
+#  name                          = var.target_group_name
+#  port                          = var.service_port_target_group
+#  protocol                      = "HTTP"
+#  vpc_id                        = data.aws_ssm_parameter.vpc_id.value
+#  target_type                   = "ip"
+#  load_balancing_algorithm_type = "least_outstanding_requests"
+#
+#  health_check {
+#    healthy_threshold   = "2"
+#    unhealthy_threshold = "5"
+#    interval            = "30"
+#    protocol            = "HTTP"
+#    matcher             = "200-399"
+#    path                = var.healthcheck_path
+#    timeout             = "10"
+#  }
+#}
 
 resource "aws_alb_listener" "https" {
   count             = var.create_cluster ? 1 : 0

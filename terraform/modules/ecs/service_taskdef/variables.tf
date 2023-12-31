@@ -1,3 +1,21 @@
+variable "deploy_repo" {
+  description = "GitHub repo passed in from CI workflow"
+  type        = string
+  default     = ""
+}
+
+variable "deploy_env" {
+  description = "Deployment environment passed in from CI workflow"
+  type        = string
+  default     = "dev"
+}
+
+variable "pipeline_token" {
+  description = "GitHub token passed in from CI workflow"
+  type        = string
+  default     = ""
+}
+
 variable "requester_name" {
   description = "requester name tag"
   type        = string
@@ -66,12 +84,6 @@ variable "ecr_repository_name" {
   description = "The ECR repository name"
 }
 
-variable "service_port_target_group" {
-  description = "application's service port"
-  type        = number
-  default     = 8080
-}
-
 variable "log_group_retention_in_days" {
   description = "Specifies the number of days you want to retain log events in the specified log group. Possible values are: 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, etc."
   type        = number
@@ -84,20 +96,46 @@ variable "parameter_store_entries" {
   default     = {}
 }
 
-variable "deploy_repo" {
-  description = "GitHub repo passed in from CI workflow"
+variable "create_cluster" {
+  description = "flag to create new cluster or use existing one"
+  type        = bool
+  default     = true
+}
+
+variable "healthcheck_path" {
+  description = "application's health check path"
   type        = string
   default     = ""
 }
 
-variable "deploy_env" {
-  description = "Deployment environment passed in from CI workflow"
+variable "service_port_target_group" {
+  description = "application's service port"
   type        = string
-  default     = "dev"
+  default     = "8080"
 }
 
-variable "pipeline_token" {
-  description = "GitHub token passed in from CI workflow"
+variable "target_group_name" {
+  default     = "default"
   type        = string
-  default     = ""
+  description = "The name of the target group"
+}
+
+variable "alb_arn_suffix" {
+  description = "ALB ARN suffix"
+  type        = string
+}
+
+variable "alb_request_count_per_target" {
+  description = "ALB request count per target, used for target_tracking_scaling_policy_configuration"
+  type        = string
+}
+
+variable "ecs_autoscaling_target_max_capacity" {
+  description = "ecs autoscaling target max_capacity"
+  type        = number
+}
+
+variable "ecs_autoscaling_target_min_capacity" {
+  description = "ecs autoscaling target min_capacity"
+  type        = number
 }

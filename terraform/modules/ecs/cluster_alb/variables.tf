@@ -37,26 +37,8 @@ variable "alb_name" {
   description = "The name of the loadbalancer"
 }
 
-variable "target_group_name" {
-  default     = "default"
-  type        = string
-  description = "The name of the target group"
-}
-
-variable "service_port_target_group" {
-  description = "application's service port"
-  type        = string
-  default     = "8080"
-}
-
 variable "context_path" {
   description = "application's context path, used for ALB listener rule configuration"
-  type        = string
-  default     = ""
-}
-
-variable "healthcheck_path" {
-  description = "application's health check path"
   type        = string
   default     = ""
 }

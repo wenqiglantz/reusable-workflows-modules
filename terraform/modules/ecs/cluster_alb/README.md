@@ -22,7 +22,6 @@ No modules.
 | Name | Type |
 |------|------|
 | [aws_alb_listener.https](https://registry.terraform.io/providers/hashicorp/aws/5.31.0/docs/resources/alb_listener) | resource |
-| [aws_alb_target_group.ecs_alb_target_group](https://registry.terraform.io/providers/hashicorp/aws/5.31.0/docs/resources/alb_target_group) | resource |
 | [aws_ecs_cluster.ecs_fargate](https://registry.terraform.io/providers/hashicorp/aws/5.31.0/docs/resources/ecs_cluster) | resource |
 | [aws_ecs_cluster_capacity_providers.fargate_capacity_provider](https://registry.terraform.io/providers/hashicorp/aws/5.31.0/docs/resources/ecs_cluster_capacity_providers) | resource |
 | [aws_lb.ecs_alb](https://registry.terraform.io/providers/hashicorp/aws/5.31.0/docs/resources/lb) | resource |
@@ -47,12 +46,9 @@ No modules.
 | <a name="input_deploy_env"></a> [deploy\_env](#input\_deploy\_env) | Deployment environment passed in from CI workflow | `string` | `"dev"` | no |
 | <a name="input_deploy_repo"></a> [deploy\_repo](#input\_deploy\_repo) | GitHub repo passed in from CI workflow | `string` | `""` | no |
 | <a name="input_github_repo_owner"></a> [github\_repo\_owner](#input\_github\_repo\_owner) | GitHub repo owner | `string` | n/a | yes |
-| <a name="input_healthcheck_path"></a> [healthcheck\_path](#input\_healthcheck\_path) | application's health check path | `string` | `""` | no |
 | <a name="input_pipeline_token"></a> [pipeline\_token](#input\_pipeline\_token) | GitHub token passed in from CI workflow | `string` | `""` | no |
 | <a name="input_requester_name"></a> [requester\_name](#input\_requester\_name) | requester name tag | `string` | n/a | yes |
 | <a name="input_service_port"></a> [service\_port](#input\_service\_port) | application's service port | `string` | `"443"` | no |
-| <a name="input_service_port_target_group"></a> [service\_port\_target\_group](#input\_service\_port\_target\_group) | application's service port | `string` | `"8080"` | no |
-| <a name="input_target_group_name"></a> [target\_group\_name](#input\_target\_group\_name) | The name of the target group | `string` | `"default"` | no |
 
 ## Outputs
 

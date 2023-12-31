@@ -316,3 +316,89 @@ resource "github_actions_environment_variable" "ecr_repository_name" {
   variable_name = "ECR_REPOSITORY_NAME"
   value         = var.ecr_repository_name
 }
+
+#######################################
+# aws_alb_target_group
+#######################################
+resource "aws_alb_target_group" "ecs_alb_target_group" {
+  count                         = var.create_cluster ? 1 : 0
+  name                          = var.target_group_name
+  port                          = local.service_port
+  protocol                      = "HTTP"
+  vpc_id                        = data.aws_ssm_parameter.vpc_id.value
+  target_type                   = "ip"
+  load_balancing_algorithm_type = "least_outstanding_requests"
+
+  health_check {
+    healthy_threshold   = "2"
+    unhealthy_threshold = "5"
+    interval            = "30"
+    protocol            = "HTTP"
+    matcher             = "200-399"
+    path                = var.healthcheck_path
+    timeout             = "10"
+  }
+}
+
+#######################################
+# aws_iam_role for auto scale
+#######################################
+resource "aws_iam_role" "ecs_autoscale_role" {
+  name = "${var.service_name}-ecs-service-autoscale"
+
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": "sts:AssumeRole",
+      "Principal": {
+        "Service": "application-autoscaling.amazonaws.com"
+      },
+      "Effect": "Allow"
+    }
+  ]
+}
+EOF
+}
+
+resource "aws_iam_role_policy_attachment" "ecs_autoscale" {
+  role       = aws_iam_role.ecs_autoscale_role.id
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceAutoscaleRole"
+}
+
+#######################################
+# aws_appautoscaling_target
+#######################################
+resource "aws_appautoscaling_target" "ecs_service_target" {
+  max_capacity       = var.ecs_autoscaling_target_max_capacity
+  min_capacity       = var.ecs_autoscaling_target_min_capacity
+  resource_id        = "service/${var.cluster_name}/${var.service_name}"
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+  role_arn           = aws_iam_role.ecs_autoscale_role.arn
+}
+
+#######################################
+# aws_appautoscaling_policy
+#######################################
+resource "aws_appautoscaling_policy" "ecs_autoscaling_policy" {
+  name               = "${var.service_name}-app-scaling-policy"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.ecs_service_target.resource_id
+  scalable_dimension = aws_appautoscaling_target.ecs_service_target.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.ecs_service_target.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ALBRequestCountPerTarget"
+      # https://github.com/hashicorp/terraform-provider-aws/issues/9734
+      resource_label         = "${var.alb_arn_suffix}/${aws_alb_target_group.ecs_alb_target_group.arn_suffix}"
+    }
+    target_value = var.alb_request_count_per_target
+  }
+  depends_on = [
+    aws_appautoscaling_target.ecs_service_target,
+    aws_ecs_service.app
+  ]
+}

@@ -21,11 +21,16 @@ No modules.
 
 | Name | Type |
 |------|------|
+| [aws_alb_target_group.ecs_alb_target_group](https://registry.terraform.io/providers/hashicorp/aws/5.31.0/docs/resources/alb_target_group) | resource |
+| [aws_appautoscaling_policy.ecs_autoscaling_policy](https://registry.terraform.io/providers/hashicorp/aws/5.31.0/docs/resources/appautoscaling_policy) | resource |
+| [aws_appautoscaling_target.ecs_service_target](https://registry.terraform.io/providers/hashicorp/aws/5.31.0/docs/resources/appautoscaling_target) | resource |
 | [aws_cloudwatch_log_group.app](https://registry.terraform.io/providers/hashicorp/aws/5.31.0/docs/resources/cloudwatch_log_group) | resource |
 | [aws_ecs_service.app](https://registry.terraform.io/providers/hashicorp/aws/5.31.0/docs/resources/ecs_service) | resource |
 | [aws_ecs_task_definition.app](https://registry.terraform.io/providers/hashicorp/aws/5.31.0/docs/resources/ecs_task_definition) | resource |
+| [aws_iam_role.ecs_autoscale_role](https://registry.terraform.io/providers/hashicorp/aws/5.31.0/docs/resources/iam_role) | resource |
 | [aws_iam_role.task_execution_role](https://registry.terraform.io/providers/hashicorp/aws/5.31.0/docs/resources/iam_role) | resource |
 | [aws_iam_role.task_role](https://registry.terraform.io/providers/hashicorp/aws/5.31.0/docs/resources/iam_role) | resource |
+| [aws_iam_role_policy_attachment.ecs_autoscale](https://registry.terraform.io/providers/hashicorp/aws/5.31.0/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.task_execution_role_attachment](https://registry.terraform.io/providers/hashicorp/aws/5.31.0/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.task_role_attachment](https://registry.terraform.io/providers/hashicorp/aws/5.31.0/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_security_group.fargate_task](https://registry.terraform.io/providers/hashicorp/aws/5.31.0/docs/resources/security_group) | resource |
@@ -50,16 +55,22 @@ No modules.
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
+| <a name="input_alb_arn_suffix"></a> [alb\_arn\_suffix](#input\_alb\_arn\_suffix) | ALB ARN suffix | `string` | n/a | yes |
+| <a name="input_alb_request_count_per_target"></a> [alb\_request\_count\_per\_target](#input\_alb\_request\_count\_per\_target) | ALB request count per target, used for target\_tracking\_scaling\_policy\_configuration | `string` | n/a | yes |
 | <a name="input_alb_security_group_id"></a> [alb\_security\_group\_id](#input\_alb\_security\_group\_id) | The ALB security group id | `string` | `"default"` | no |
 | <a name="input_alb_target_group_arn"></a> [alb\_target\_group\_arn](#input\_alb\_target\_group\_arn) | The ARN of the ALB target group | `string` | `"default"` | no |
 | <a name="input_aws_region"></a> [aws\_region](#input\_aws\_region) | AWS region | `string` | `"us-east-1"` | no |
 | <a name="input_cluster_name"></a> [cluster\_name](#input\_cluster\_name) | Name of the cluster (up to 255 letters, numbers, hyphens, and underscores) | `string` | n/a | yes |
 | <a name="input_cpu"></a> [cpu](#input\_cpu) | The CPU size | `number` | `512` | no |
 | <a name="input_cpu_architecture"></a> [cpu\_architecture](#input\_cpu\_architecture) | ECS task definition's CPU architecture, either X86\_64 or ARM64 | `string` | `"X86_64"` | no |
+| <a name="input_create_cluster"></a> [create\_cluster](#input\_create\_cluster) | flag to create new cluster or use existing one | `bool` | `true` | no |
 | <a name="input_deploy_env"></a> [deploy\_env](#input\_deploy\_env) | Deployment environment passed in from CI workflow | `string` | `"dev"` | no |
 | <a name="input_deploy_repo"></a> [deploy\_repo](#input\_deploy\_repo) | GitHub repo passed in from CI workflow | `string` | `""` | no |
 | <a name="input_ecr_repository_name"></a> [ecr\_repository\_name](#input\_ecr\_repository\_name) | The ECR repository name | `string` | `"default"` | no |
+| <a name="input_ecs_autoscaling_target_max_capacity"></a> [ecs\_autoscaling\_target\_max\_capacity](#input\_ecs\_autoscaling\_target\_max\_capacity) | ecs autoscaling target max\_capacity | `number` | n/a | yes |
+| <a name="input_ecs_autoscaling_target_min_capacity"></a> [ecs\_autoscaling\_target\_min\_capacity](#input\_ecs\_autoscaling\_target\_min\_capacity) | ecs autoscaling target min\_capacity | `number` | n/a | yes |
 | <a name="input_github_repo_owner"></a> [github\_repo\_owner](#input\_github\_repo\_owner) | GitHub repo owner | `string` | n/a | yes |
+| <a name="input_healthcheck_path"></a> [healthcheck\_path](#input\_healthcheck\_path) | application's health check path | `string` | `""` | no |
 | <a name="input_log_group_retention_in_days"></a> [log\_group\_retention\_in\_days](#input\_log\_group\_retention\_in\_days) | Specifies the number of days you want to retain log events in the specified log group. Possible values are: 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, etc. | `number` | `7` | no |
 | <a name="input_memory"></a> [memory](#input\_memory) | The memory size | `number` | `1024` | no |
 | <a name="input_operating_system_family"></a> [operating\_system\_family](#input\_operating\_system\_family) | ECS task definition's operating system family, such as LINUX, WINDOWS\_SERVER\_2019\_FULL, etc. | `string` | `"LINUX"` | no |
@@ -67,7 +78,8 @@ No modules.
 | <a name="input_pipeline_token"></a> [pipeline\_token](#input\_pipeline\_token) | GitHub token passed in from CI workflow | `string` | `""` | no |
 | <a name="input_requester_name"></a> [requester\_name](#input\_requester\_name) | requester name tag | `string` | n/a | yes |
 | <a name="input_service_name"></a> [service\_name](#input\_service\_name) | service name, the same as the ECR image name | `string` | n/a | yes |
-| <a name="input_service_port_target_group"></a> [service\_port\_target\_group](#input\_service\_port\_target\_group) | application's service port | `number` | `8080` | no |
+| <a name="input_service_port_target_group"></a> [service\_port\_target\_group](#input\_service\_port\_target\_group) | application's service port | `string` | `"8080"` | no |
+| <a name="input_target_group_name"></a> [target\_group\_name](#input\_target\_group\_name) | The name of the target group | `string` | `"default"` | no |
 
 ## Outputs
 
