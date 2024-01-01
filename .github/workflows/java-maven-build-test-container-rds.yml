@@ -175,7 +175,7 @@ jobs:
           extra_args: --debug --only-verified
 
       - name: Scan ECR image with Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@9ab158e8597f3b310480b9a69402b419bc03dbd5
+        uses: aquasecurity/trivy-action@41f05d9ecffa2ed3f1580af306000f734b733e54
         with:
           image-ref: ${{ steps.build-image.outputs.image }}
           format: 'table'
