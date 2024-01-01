@@ -105,7 +105,7 @@ jobs:
           name: ${{ inputs.attachments }}
 
       - name: Send email
-        uses: dawidd6/action-send-mail@6063705cefe50cb915fc53bb06d4049cae2953b2
+        uses: dawidd6/action-send-mail@48476814b0338573004e9de1e8504b25ff8cc23c
         with:
           server_address: ${{ inputs.server-address }}
           server_port: ${{ inputs.server-port }}
