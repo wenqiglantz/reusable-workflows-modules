@@ -1,0 +1,66 @@
+name: ".Docker image pull from Docker Hub and push to ECR"
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to run the workflow against'
+        type: environment
+        required: true
+      image-to-pull:
+        description: 'Image to pull from docker hub'
+        type: string
+        required: true
+      ecr-name:
+        description: 'ECR repository name'
+        type: string
+        required: true
+      image-tag:
+        description: 'Image tag to push to ECR'
+        type: string
+        required: true
+
+permissions:  # added using https://github.com/step-security/secure-workflows
+  contents: read
+
+jobs:
+
+  image-pull-push:
+    runs-on: ubuntu-latest
+
+    environment: ${{ github.event.inputs.environment || 'dev' }}
+
+    permissions:
+      id-token: write  # need this for OIDC
+      contents: read   # This is required for actions/checkout@v2
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355
+        with:
+          role-to-assume: ${{ vars.ROLE_TO_ASSUME }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Print debug info
+        run: |
+          echo github actor: ${{ github.actor }}
+          echo github actor id: ${{ github.actor_id }}
+          echo branch or tag: ${{ github.ref_type }}
+          echo branch or tag name: ${{ github.ref_name }}
+          echo ecr repo: ${{ inputs.ecr-name }}
+          echo image to pull: ${{ inputs.image-to-pull }}
+          echo image tag: ${{ inputs.image-tag }}
+
+      - name: Pull image from docker hub and push image to ECR
+        env:
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          ECR_REGISTRY: ${{ vars.ECR_REGISTRY }}
+          ECR_REPOSITORY: ${{ inputs.ecr-name }}
+          IMAGE_TO_PULL: ${{ inputs.image-to-pull }}
+          IMAGE_TAG: ${{ inputs.image-tag }}
+        run: |
+          aws ecr get-login-password --region $AWS_REGION | docker login -u AWS --password-stdin $ECR_REGISTRY
+          docker pull $IMAGE_TO_PULL
+          docker tag $IMAGE_TO_PULL $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT

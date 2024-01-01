@@ -145,39 +145,39 @@ resource "aws_lb" "ecs_alb" {
 #  }
 #}
 
-resource "aws_alb_listener" "https" {
-  count             = var.create_cluster ? 1 : 0
-  load_balancer_arn = aws_lb.ecs_alb[0].id
-  port              = var.service_port
-  protocol          = "HTTPS"
-  ssl_policy        = "ELBSecurityPolicy-TLS-1-2-2017-01"
-  certificate_arn   = var.alb_https_certificate_arn
-
-  default_action {
-    target_group_arn = aws_alb_target_group.ecs_alb_target_group[0].arn
-    type             = "forward"
-  }
-}
-
-resource "aws_lb_listener_rule" "ag_alb_listener_rule" {
-  count        = var.create_cluster ? 1 : 0
-  listener_arn = aws_alb_listener.https[0].arn
-  priority     = 1
-
-  action {
-    type             = "forward"
-    target_group_arn = aws_alb_target_group.ecs_alb_target_group[0].arn
-  }
-  condition {
-    path_pattern {
-      values = [
-        join("", ["/", var.context_path]),
-        join("", ["/", var.context_path, "/"]),
-        join("", ["/", var.context_path, "/*"])
-      ]
-    }
-  }
-}
+#resource "aws_alb_listener" "https" {
+#  count             = var.create_cluster ? 1 : 0
+#  load_balancer_arn = aws_lb.ecs_alb[0].id
+#  port              = var.service_port
+#  protocol          = "HTTPS"
+#  ssl_policy        = "ELBSecurityPolicy-TLS-1-2-2017-01"
+#  certificate_arn   = var.alb_https_certificate_arn
+#
+#  default_action {
+#    target_group_arn = aws_alb_target_group.ecs_alb_target_group[0].arn
+#    type             = "forward"
+#  }
+#}
+#
+#resource "aws_lb_listener_rule" "ag_alb_listener_rule" {
+#  count        = var.create_cluster ? 1 : 0
+#  listener_arn = aws_alb_listener.https[0].arn
+#  priority     = 1
+#
+#  action {
+#    type             = "forward"
+#    target_group_arn = aws_alb_target_group.ecs_alb_target_group[0].arn
+#  }
+#  condition {
+#    path_pattern {
+#      values = [
+#        join("", ["/", var.context_path]),
+#        join("", ["/", var.context_path, "/"]),
+#        join("", ["/", var.context_path, "/*"])
+#      ]
+#    }
+#  }
+#}
 
 #######################################
 # GitHub env variable creation, need this variable for app CI/CD in github actions
