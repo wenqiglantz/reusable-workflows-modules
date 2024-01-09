@@ -27,7 +27,7 @@ on:
       from:
         required: false
         type: string
-        default: '"GitHub Actions" <gitaction-notification@agcloud.bz>'
+        default: '"GitHub Actions" <gitaction-notification@YOUR-DNS.COM>'
       # Required recipients' addresses, if multiple, separate by comma
       to:
         required: true
