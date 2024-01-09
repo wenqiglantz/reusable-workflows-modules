@@ -72,7 +72,7 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@e81a89b1732b9c48d79cd809d8d81d79c4647a18 # v2.1.0
+        uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
         with:
           platforms: arm64, amd64 # By default QEMU will create almost a dozen vm’s. Limit it to just the architectures we care about.
 
